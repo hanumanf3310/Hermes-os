@@ -105,6 +105,7 @@ COMMAND_REGISTRY: list[CommandDef] = [
                aliases=("provider",), args_hint="[model] [--provider name] [--global]"),
     CommandDef("gquota", "Show Google Gemini Code Assist quota usage", "Info",
                cli_only=True),
+    CommandDef("gpts", "Show Codex GPT rate limits and usage stats", "Info"),
 
     CommandDef("personality", "Set a predefined personality", "Configuration",
                args_hint="[name]"),

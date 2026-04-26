@@ -5535,6 +5535,82 @@ class HermesCLI:
             self._console_print(f"    {header:40s}  {bar}  {pct_str}")
         self._console_print()
 
+    def _handle_gpts_command(self, cmd_original: str) -> None:
+        """Show Codex GPT rate limits and usage stats."""
+        args = cmd_original.lower().split()
+        plan_arg = None
+        compare_mode = "--compare" in args
+        debug_mode = "--debug" in args
+
+        for i, arg in enumerate(args):
+            if arg == "--plan" and i + 1 < len(args):
+                plan_arg = args[i + 1].upper()
+                break
+
+        try:
+            from gateway.codex_bridge import CodexStatusBridge, compare_plans
+        except ImportError as exc:
+            self._console_print(f"  [red]Codex bridge unavailable: {exc}[/]")
+            return
+
+        if compare_mode:
+            self._console_print()
+            self._console_print("  [bold]🔬 A/B Test: Plan A vs Plan B[/]")
+            self._console_print("  " + "─" * 50)
+            comparison = compare_plans()
+            for plan_name in ("plan_a", "plan_b"):
+                plan_label = plan_name.replace("plan_", "Plan ").upper()
+                data = comparison.get(plan_name, {})
+                self._console_print(f"\n  [bold]{plan_label}:[/]")
+                self._console_print(f"    Latency: {data.get('latency_ms', 'N/A')} ms")
+                self._console_print(f"    Success: {'✅' if data.get('success') else '❌'}")
+                if data.get("data"):
+                    d = data["data"]
+                    self._console_print(f"    Context: {d.get('context_left_pct', 'N/A')}% left")
+                    self._console_print(f"    Source: {d.get('source', 'N/A')}")
+            winner = comparison.get("winner", "N/A")
+            speedup = comparison.get("speedup", "N/A")
+            self._console_print(f"\n  🏆 Winner: Plan {winner} ({speedup}x faster)")
+            self._console_print()
+            return
+
+        bridge = CodexStatusBridge(plan=plan_arg or "C")
+        data = bridge.get_status()
+        if not data:
+            self._console_print()
+            self._console_print("  [yellow]❌ ไม่พบข้อมูล Codex Session[/]")
+            self._console_print("  `/gpts` actively refreshes via Codex CLI; use `/gpts --debug` for source details.")
+            self._console_print()
+            return
+
+        if data["context_left_pct"] > 50:
+            status_emoji, status_color, status_text = "🟢", "green", "ดี"
+        elif data["context_left_pct"] > 20:
+            status_emoji, status_color, status_text = "🟡", "yellow", "ปานกลาง"
+        else:
+            status_emoji, status_color, status_text = "🔴", "red", "เหลือน้อย"
+
+        self._console_print()
+        self._console_print("  [bold]🤖 Codex GPT Status[/]")
+        if debug_mode:
+            self._console_print(f"  [dim](Plan {data.get('plan', '?')} via {data.get('source', '?')})[/dim]")
+        self._console_print()
+        self._console_print("  [bold]📊 Context Usage[/]")
+        self._console_print(f"     {data['context_left_pct']}% เหลือ ({data['context_used']:,} / {data['context_window']:,} tokens)")
+        self._console_print(f"     [{status_color}]{status_emoji} สถานะ: {status_text}[/{status_color}]")
+        self._console_print()
+        self._console_print("  [bold]⏱️ 5h Limit[/] (รีเซ็ตทุก 5 ชั่วโมง)")
+        self._console_print(f"     ใช้ไป: {data['used_5h_pct']:.0f}% (เหลือ {data['left_5h_pct']:.0f}%)")
+        self._console_print(f"     ⏳ รีเซ็ต: {data['reset_5h']}")
+        self._console_print()
+        self._console_print("  [bold]📅 7d Limit[/] (รีเซ็ตทุก 7 วัน)")
+        self._console_print(f"     ใช้ไป: {data['used_7d_pct']:.0f}% (เหลือ {data['left_7d_pct']:.0f}%)")
+        self._console_print(f"     ⏳ รีเซ็ต: {data['reset_7d']}")
+        self._console_print()
+        self._console_print(f"  [dim]💎 Plan: {data.get('plan_type', 'unknown').upper()}[/dim]")
+        self._console_print("  🔗 Verify usage: https://chatgpt.com/codex/cloud/settings/analytics#usage")
+        self._console_print()
+
     def _handle_personality_command(self, cmd: str):
         """Handle the /personality command to set predefined personalities."""
         parts = cmd.split(maxsplit=1)
@@ -6044,6 +6120,8 @@ class HermesCLI:
             self._handle_model_switch(cmd_original)
         elif canonical == "gquota":
             self._handle_gquota_command(cmd_original)
+        elif canonical == "gpts":
+            self._handle_gpts_command(cmd_original)
 
         elif canonical == "personality":
             # Use original case (handler lowercases the personality name itself)

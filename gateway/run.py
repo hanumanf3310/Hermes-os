@@ -3827,6 +3827,9 @@ class GatewayRunner:
         if canonical == "model":
             return await self._handle_model_command(event)
 
+        if canonical == "gpts":
+            return await self._handle_gpts_command(event)
+
         if canonical == "personality":
             return await self._handle_personality_command(event)
 
@@ -5980,6 +5983,138 @@ class GatewayRunner:
         else:
             lines.append("_(session only -- add `--global` to persist)_")
 
+        return "\n".join(lines)
+
+    async def _handle_gpts_command(self, event: MessageEvent) -> str:
+        """Handle /gpts command - show Codex GPT rate limits and usage."""
+        from gateway.codex_bridge import CodexStatusBridge
+
+        arg_str = event.get_command_args().lower().strip()
+        args = arg_str.split()
+        plan_arg = None
+        compare_mode = "--compare" in args
+        debug_mode = "--debug" in args
+
+        for i, part in enumerate(args):
+            if part == "--plan" and i + 1 < len(args):
+                plan_arg = args[i + 1].upper()
+                break
+
+        bridge = CodexStatusBridge(plan=plan_arg or "C")
+
+        if compare_mode:
+            comparison = await bridge.compare_plans_async()
+            lines = [
+                "🔬 **A/B Test: เปรียบเทียบ Plan A กับ Plan B**",
+                "",
+                "**Plan A (Real-time Direct):**",
+                f"  ⏱️ Latency: {comparison.get('plan_a', {}).get('latency_ms', 'N/A')} ms",
+                f"  {'✅' if comparison.get('plan_a', {}).get('success') else '❌'} Success",
+            ]
+            if comparison.get("plan_a", {}).get("data"):
+                d = comparison["plan_a"]["data"]
+                lines.extend([
+                    f"  📊 Context: {d.get('context_left_pct', 'N/A')}% left",
+                    f"  📁 Source: {d.get('source', 'N/A')}",
+                ])
+            lines.extend([
+                "",
+                "**Plan B (File Bridge):**",
+                f"  ⏱️ Latency: {comparison.get('plan_b', {}).get('latency_ms', 'N/A')} ms",
+                f"  {'✅' if comparison.get('plan_b', {}).get('success') else '❌'} Success",
+            ])
+            if comparison.get("plan_b", {}).get("data"):
+                d = comparison["plan_b"]["data"]
+                lines.extend([
+                    f"  📊 Context: {d.get('context_left_pct', 'N/A')}% left",
+                    f"  📁 Source: {d.get('source', 'N/A')}",
+                ])
+            winner = comparison.get("winner", "N/A")
+            speedup = comparison.get("speedup", "N/A")
+            lines.extend([
+                "",
+                f"🏆 **Winner:** Plan {winner} ({speedup}x faster)",
+                "",
+                "💡 **Recommendation:**",
+                "• Use Plan A for real-time data",
+                "• Use Plan B for speed",
+            ])
+            return "\n".join(lines)
+
+        data = await bridge.get_status_async()
+        if not data:
+            checked_paths = []
+            scanner = getattr(bridge, "_source_scanner", None)
+            if scanner is not None:
+                checked_paths = list(getattr(scanner, "checked_paths", []) or [])
+            checked_block = ""
+            if checked_paths:
+                checked_block = "\nChecked paths:\n" + "\n".join(f"• `{p}`" for p in checked_paths[:8]) + "\n"
+            probe_error = getattr(bridge, "last_probe_error", None)
+            probe_block = f"\nProbe error:\n`{probe_error}`\n" if probe_error else ""
+            return (
+                "❌ Codex refresh failed\n\n"
+                "`/gpts` actively refreshes by running `codex exec --json ... Hello`, "
+                "then reads the new session token_count.\n"
+                f"{probe_block}"
+                "Please check:\n"
+                "• Is Codex CLI logged in and available?\n"
+                "• Can `codex exec` create a session from this environment?\n"
+                f"{checked_block}\n"
+                "Use `/gpts --debug` to inspect source paths or `/gpts --compare` to test both plans"
+            )
+
+        if data["context_left_pct"] > 50:
+            status_emoji, status_text = "🟢", "Good"
+        elif data["context_left_pct"] > 20:
+            status_emoji, status_text = "🟡", "Moderate"
+        else:
+            status_emoji, status_text = "🔴", "Low"
+
+        debug_info = f" (Debug: {data.get('plan', '?')} via {data.get('source', '?')})" if debug_mode else ""
+        lines = [
+            f"🤖 **Codex GPT Status**{debug_info}",
+            "",
+            "📊 **Context Usage**",
+            f"   {data['context_left_pct']}% remaining ({data['context_used']:,} / {data['context_window']:,} tokens)",
+            f"   {status_emoji} Status: {status_text}",
+            "",
+            "⏱️ **5h Limit** (resets every 5 hours)",
+            f"   Used: {data['used_5h_pct']:.0f}% ({data['left_5h_pct']:.0f}% remaining)",
+            f"   ⏳ Reset: {data['reset_5h']}",
+            "",
+            "📅 **7d Limit** (resets every 7 days)",
+            f"   Used: {data['used_7d_pct']:.0f}% ({data['left_7d_pct']:.0f}% remaining)",
+            f"   ⏳ Reset: {data['reset_7d']}",
+            f"💎 Plan: {data.get('plan_type', 'unknown').upper()}",
+            "🔗 Verify usage: https://chatgpt.com/codex/cloud/settings/analytics#usage",
+        ]
+        if data.get("is_stale"):
+            lines.insert(2, "⚠️ Source appears stale — verify against VS Code `/status` before relying on it")
+        if data.get("source") == "codex_exec_probe":
+            lines.insert(2, "🔄 Refreshed via Codex CLI probe (`Hello`) — may consume a small amount of quota")
+        if debug_mode:
+            lines.insert(2, f"📈 Latency: {data.get('latency_ms', 'N/A')} ms")
+            debug_lines = [
+                "",
+                "🧭 **Debug Source**",
+                f"   Plan: `{data.get('plan', '?')}`",
+                f"   Source: `{data.get('source', '?')}`",
+            ]
+            for key, label in (
+                ("source_path", "Path"),
+                ("source_mtime", "MTime"),
+                ("source_age_seconds", "Age"),
+                ("event_timestamp", "Event"),
+                ("originator", "Originator"),
+                ("line_offset", "Line offset"),
+            ):
+                if data.get(key) is not None:
+                    suffix = "s" if key == "source_age_seconds" else ""
+                    debug_lines.append(f"   {label}: `{data.get(key)}{suffix}`")
+            if data.get("freshness_warning"):
+                debug_lines.append(f"   ⚠️ {data.get('freshness_warning')}")
+            lines.extend(debug_lines)
         return "\n".join(lines)
 
     async def _handle_personality_command(self, event: MessageEvent) -> str:

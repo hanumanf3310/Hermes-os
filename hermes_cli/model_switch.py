@@ -1173,7 +1173,7 @@ def list_authenticated_providers(
         if not has_creds:
             continue
 
-        if hermes_slug in {"copilot", "copilot-acp"}:
+        if hermes_slug in {"copilot", "copilot-acp", "openai-codex"}:
             model_ids = provider_model_ids(hermes_slug)
         else:
             # Use curated list — look up by Hermes slug, fall back to overlay key
@@ -1302,6 +1302,23 @@ def list_authenticated_providers(
                 for m in cfg_models:
                     if m and m not in models_list:
                         models_list.append(m)
+
+            # Ollama Launch is a docs-driven virtual provider. A config subset
+            # or extra model must augment — not replace — the recommended cloud
+            # models that Boss expects in the picker.
+            if ep_name == "ollama-launch":
+                recommended = list(curated.get("ollama-launch", []))
+                merged_models = []
+                # Merge order: current/default -> recommended -> config extras.
+                ordered_candidates = []
+                if default_model:
+                    ordered_candidates.append(default_model)
+                ordered_candidates.extend(recommended)
+                ordered_candidates.extend(models_list)
+                for m in ordered_candidates:
+                    if m and m not in merged_models:
+                        merged_models.append(m)
+                models_list = merged_models
 
             # Official OpenAI API rows in providers: often have base_url but no
             # explicit models: dict — avoid a misleading zero count in /model.

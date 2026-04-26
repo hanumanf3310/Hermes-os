@@ -151,6 +151,16 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
         "gpt-4o-mini",
     ],
     "openai-codex": _codex_curated_models(),
+    # Virtual picker/provider used by the `ollama launch hermes` flow. Keep
+    # this docs-driven recommended cloud set visible even when config.yaml has
+    # only a subset or user extras; `ollama-cloud` remains the native API-key
+    # provider gated by OLLAMA_API_KEY.
+    "ollama-launch": [
+        "kimi-k2.5:cloud",
+        "glm-5.1:cloud",
+        "qwen3.5:cloud",
+        "minimax-m2.7:cloud",
+    ],
     "copilot-acp": [
         "copilot-acp",
     ],
@@ -1765,7 +1775,7 @@ def _merge_with_models_dev(provider: str, curated: list[str]) -> list[str]:
     return merged
 
 
-def provider_model_ids(provider: Optional[str], *, force_refresh: bool = False) -> list[str]:
+def provider_model_ids(provider: Optional[str], *, force_refresh: bool = False, api_key: Optional[str] = None) -> list[str]:
     """Return the best known model catalog for a provider.
 
     Tries live API endpoints for providers that support them (Codex, Nous),
@@ -1780,18 +1790,20 @@ def provider_model_ids(provider: Optional[str], *, force_refresh: bool = False) 
     if normalized == "openai-codex":
         from hermes_cli.codex_models import get_codex_model_ids
 
-        # Pass the live OAuth access token so the picker matches whatever
-        # ChatGPT lists for this account right now (new models appear without
-        # a Hermes release). Falls back to the hardcoded catalog if no token
-        # or the endpoint is unreachable.
-        access_token = None
-        try:
-            from hermes_cli.auth import resolve_codex_runtime_credentials
+        # Prefer the explicit runtime OAuth access token used by the picker or
+        # validation path so render/selection validation consult the same live
+        # account-scoped Codex catalog. If no token is supplied, resolve the
+        # current runtime credentials and fall back to the curated catalog when
+        # unavailable.
+        access_token = api_key
+        if not access_token:
+            try:
+                from hermes_cli.auth import resolve_codex_runtime_credentials
 
-            creds = resolve_codex_runtime_credentials(refresh_if_expiring=True)
-            access_token = creds.get("api_key")
-        except Exception:
-            access_token = None
+                creds = resolve_codex_runtime_credentials(refresh_if_expiring=True)
+                access_token = creds.get("api_key")
+            except Exception:
+                access_token = None
         return get_codex_model_ids(access_token=access_token)
     if normalized in {"copilot", "copilot-acp"}:
         try:
@@ -2677,7 +2689,7 @@ def validate_requested_model(
     # OpenAI Codex has its own catalog path; /v1/models probing is not the right validation path.
     if normalized == "openai-codex":
         try:
-            codex_models = provider_model_ids("openai-codex")
+            codex_models = provider_model_ids("openai-codex", api_key=api_key)
         except Exception:
             codex_models = []
         if codex_models:
@@ -2755,6 +2767,21 @@ def validate_requested_model(
                     "\n  MiniMax does not expose a /models endpoint, so Hermes cannot verify the model name."
                     "\n  The model may still work if it exists on the server."
                 ),
+            }
+
+    # Ollama Launch (`ollama launch hermes`) often serves cloud models through a
+    # local OpenAI-compatible endpoint whose /models list can omit the cloud
+    # entries until first use. Validate the documented picker catalog before the
+    # generic /models probe so picker-visible cloud models remain selectable.
+    if normalized == "ollama-launch":
+        catalog_models = provider_model_ids("ollama-launch")
+        catalog_lower = {m.lower(): m for m in catalog_models}
+        if requested_for_lookup.lower() in catalog_lower:
+            return {
+                "accepted": True,
+                "persist": True,
+                "recognized": True,
+                "message": None,
             }
 
     # Native Anthropic provider: /v1/models requires x-api-key (or Bearer for
