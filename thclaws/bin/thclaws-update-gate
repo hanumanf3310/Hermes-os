@@ -1,0 +1,178 @@
+#!/usr/bin/env python3
+"""Update-safe thClaws candidate gate.
+
+Default mode is non-destructive: validate current/candidate without promoting.
+Use --promote only after reviewing the report and confirming gates passed.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import shutil
+import subprocess
+import sys
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+
+REPO_URL = "https://github.com/thClaws/thClaws.git"
+REQUIRED_FLAGS = ["--print", "--model", "--permission-mode", "--max-iterations", "--disallowed-tools", "--help", "--version"]
+EXPECTED = "THCLAWS_REAL_SMOKE_OK"
+
+
+def run(cmd, cwd=None, timeout=300):
+    started = time.time()
+    p = subprocess.run(cmd, cwd=cwd, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout)
+    return {
+        "cmd": cmd,
+        "cwd": str(cwd) if cwd else None,
+        "exit_code": p.returncode,
+        "duration_seconds": round(time.time() - started, 3),
+        "stdout": p.stdout,
+        "stderr": p.stderr,
+    }
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--candidate", default=None, help="Existing candidate repo path. Default: ~/.hermes/thclaws/candidate")
+    ap.add_argument("--refresh", action="store_true", help="Fetch/clone upstream candidate before testing")
+    ap.add_argument("--promote", action="store_true", help="Promote candidate to releases/current only if gates pass")
+    ap.add_argument("--skip-build", action="store_true", help="Skip cargo build/check; useful for dry wrapper verification")
+    args = ap.parse_args()
+
+    base = Path.home() / ".hermes/thclaws"
+    reports = base / "reports"
+    logs = base / "logs"
+    smoke = base / "smoke"
+    releases = base / "releases"
+    for d in [reports, logs, smoke, releases, base / "candidate"]:
+        d.mkdir(parents=True, exist_ok=True)
+
+    candidate = Path(args.candidate).expanduser() if args.candidate else base / "candidate"
+    current = base / "current"
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    report = {
+        "generated_utc": datetime.now(timezone.utc).isoformat(),
+        "repo_url": REPO_URL,
+        "candidate": str(candidate),
+        "current": str(current.resolve()) if current.exists() else None,
+        "promote_requested": args.promote,
+        "gates": [],
+        "promoted": False,
+    }
+
+    if args.refresh:
+        if candidate.exists() and (candidate / ".git").exists():
+            report["gates"].append(run(["git", "fetch", "--all", "--tags", "--prune"], cwd=candidate, timeout=300))
+            report["gates"].append(run(["git", "checkout", "main"], cwd=candidate, timeout=120))
+            report["gates"].append(run(["git", "pull", "--ff-only"], cwd=candidate, timeout=300))
+        elif any(candidate.iterdir()) if candidate.exists() else False:
+            raise SystemExit(f"candidate path exists but is not empty git repo: {candidate}")
+        else:
+            if candidate.exists():
+                shutil.rmtree(candidate)
+            report["gates"].append(run(["git", "clone", REPO_URL, str(candidate)], timeout=600))
+
+    if not (candidate / ".git").exists():
+        # No candidate checkout yet; use current as a non-destructive dry verification source.
+        candidate = current.resolve()
+        report["candidate"] = str(candidate)
+        report["note"] = "No candidate git checkout found; validated current release as dry-run."
+
+    old_commit = None
+    if current.exists():
+        try:
+            old_commit = subprocess.check_output(["git", "-C", str(current.resolve()), "rev-parse", "HEAD"], text=True).strip()
+        except Exception:
+            old_commit = None
+    new_commit = subprocess.check_output(["git", "-C", str(candidate), "rev-parse", "HEAD"], text=True).strip()
+    short = new_commit[:7]
+    report["old_current_commit"] = old_commit
+    report["candidate_commit"] = new_commit
+
+    if not args.skip_build:
+        report["gates"].append(run(["cargo", "check", "--locked", "-p", "thclaws-core", "--bins", "--lib"], cwd=candidate, timeout=900))
+        report["gates"].append(run(["cargo", "build", "--locked", "-p", "thclaws-core", "--bin", "thclaws-cli"], cwd=candidate, timeout=900))
+
+    cli = candidate / "target/debug/thclaws-cli"
+    if not cli.exists():
+        report["gates"].append({"cmd": [str(cli)], "exit_code": 127, "stdout": "", "stderr": "missing candidate thclaws-cli"})
+    else:
+        version = run([str(cli), "--version"], timeout=120)
+        help_out = run([str(cli), "--help"], timeout=120)
+        report["gates"].extend([version, help_out])
+        help_text = help_out["stdout"] + help_out["stderr"]
+        missing = [f for f in REQUIRED_FLAGS if f not in help_text and f not in (version["stdout"] + version["stderr"])]
+        report["flag_compatibility"] = {"required": REQUIRED_FLAGS, "missing": missing, "passed": not missing}
+
+        work = smoke / f"candidate-{short}-{stamp}"
+        work.mkdir(parents=True, exist_ok=True)
+        (work / "README.md").write_text(f"# thClaws update-gate smoke\n{stamp}\n", encoding="utf-8")
+        smoke_cmd = [
+            "timeout", "150s", str(cli),
+            "--print",
+            "--model", "ollama/qwen3.5:cloud",
+            "--permission-mode", "ask",
+            "--max-iterations", "1",
+            "--disallowed-tools", "Bash,Edit,Write,Read,Glob,Grep,WebFetch,WebSearch",
+            f"Reply exactly: {EXPECTED}",
+        ]
+        smoke_res = run(smoke_cmd, cwd=work, timeout=180)
+        smoke_res["expected"] = EXPECTED
+        smoke_res["passed"] = smoke_res["exit_code"] == 0 and EXPECTED in smoke_res["stdout"]
+        report["gates"].append(smoke_res)
+        report["workspace_files_after"] = [str(p) for p in work.rglob("*") if p.is_file()]
+
+    gates_ok = all(g.get("exit_code") == 0 for g in report["gates"]) and report.get("flag_compatibility", {}).get("passed", False)
+    # Require smoke passed if smoke ran
+    smoke_gates = [g for g in report["gates"] if g.get("expected") == EXPECTED]
+    if smoke_gates:
+        gates_ok = gates_ok and all(g.get("passed") for g in smoke_gates)
+    report["passed"] = bool(gates_ok)
+
+    if args.promote and gates_ok:
+        rel = releases / f"thclaws-{short}-{datetime.now(timezone.utc).strftime('%Y%m%d')}"
+        if rel.exists():
+            shutil.rmtree(rel)
+        ignore = shutil.ignore_patterns("target")
+        shutil.copytree(candidate, rel, symlinks=True, ignore=ignore)
+        (rel / "target/debug").mkdir(parents=True, exist_ok=True)
+        shutil.copy2(candidate / "target/debug/thclaws-cli", rel / "target/debug/thclaws-cli")
+        os.chmod(rel / "target/debug/thclaws-cli", 0o755)
+        tmp_link = base / ".current.tmp"
+        if tmp_link.exists() or tmp_link.is_symlink():
+            tmp_link.unlink()
+        tmp_link.symlink_to(rel)
+        tmp_link.replace(current)
+        report["promoted"] = True
+        report["promoted_release"] = str(rel)
+
+    json_path = reports / f"update_gate_{stamp}.json"
+    md_path = reports / f"update_gate_{stamp}.md"
+    json_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+    lines = [
+        "# thClaws Update Gate Report",
+        "",
+        f"Generated UTC: {report['generated_utc']}",
+        f"Current: `{report.get('current')}`",
+        f"Candidate: `{report.get('candidate')}`",
+        f"Old commit: `{old_commit}`",
+        f"Candidate commit: `{new_commit}`",
+        f"Passed: **{report['passed']}**",
+        f"Promoted: **{report['promoted']}**",
+        "",
+        "## Gates",
+        "",
+    ]
+    for g in report["gates"]:
+        lines.append(f"- `{' '.join(g.get('cmd', []))}` → exit `{g.get('exit_code')}`, duration `{g.get('duration_seconds','n/a')}s`")
+    lines += ["", "## Flag compatibility", "", f"```json\n{json.dumps(report.get('flag_compatibility', {}), indent=2)}\n```", "", f"JSON: `{json_path}`", ""]
+    md_path.write_text("\n".join(lines), encoding="utf-8")
+    print(json.dumps({"passed": report["passed"], "promoted": report["promoted"], "json": str(json_path), "md": str(md_path), "candidate_commit": new_commit}, indent=2))
+    return 0 if report["passed"] else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

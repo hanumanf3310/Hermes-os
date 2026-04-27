@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT="/home/hanuman3310/hermes-os-mode/tools/hermes_pre_update_check.py"
+
+if [[ ! -f "$SCRIPT" ]]; then
+  echo "preupdate-hermes: missing script: $SCRIPT" >&2
+  exit 1
+fi
+
+exec python3 "$SCRIPT" "$@"

@@ -1,0 +1,63 @@
+{
+  "skill_id": "SKILL-GENERA-REVIEW-351",
+  "skill_slug": "requesting-code-review",
+  "title": "Pre-Commit Code Verification",
+  "summary_1l": "",
+  "description": "",
+  "domain": "general",
+  "subdomain": "pre-commit",
+  "language": "mixed",
+  "tags": [
+    "rest",
+    "testing",
+    "validation",
+    "github",
+    "qa",
+    "debug",
+    "settings",
+    "integration"
+  ],
+  "aliases": [
+    "requesting code review",
+    "pre-commit code verification",
+    "requesting review"
+  ],
+  "status": "active",
+  "version": "1.0.0",
+  "owner": "system",
+  "priority": "medium",
+  "trust_score": 0.8,
+  "usage_count": 0,
+  "helpful_count": 0,
+  "has_references": false,
+  "has_templates": false,
+  "has_scripts": false,
+  "has_examples": false,
+  "entry_file": "SKILL.md",
+  "references_dir": "references",
+  "templates_dir": "templates",
+  "scripts_dir": "scripts",
+  "examples_dir": "examples",
+  "constraints": [],
+  "compatibility": {
+    "os": [
+      "linux"
+    ],
+    "tools": []
+  },
+  "search": {
+    "boost_keywords": [
+      "rest",
+      "testing",
+      "validation",
+      "github",
+      "qa"
+    ],
+    "deprecated_penalty": 0,
+    "fts_enabled": true
+  },
+  "deprecated_reason": "",
+  "superseded_by": "",
+  "created_at": "2026-04-22T01:59:25.006442",
+  "updated_at": "2026-04-22T01:59:25.006446"
+}

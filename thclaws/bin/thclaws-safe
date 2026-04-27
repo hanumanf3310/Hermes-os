@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+BASE="${THCLAWS_HOME:-$HOME/.hermes/thclaws}"
+CURRENT="$BASE/current"
+CLI="$CURRENT/target/debug/thclaws-cli"
+MODEL="${THCLAWS_MODEL:-gpt-5.4-mini}"
+FALLBACK_MODEL="${THCLAWS_FALLBACK_MODEL:-ollama/qwen3.5:cloud}"
+AUTO_FALLBACK_LOCAL="${THCLAWS_AUTO_FALLBACK_LOCAL:-1}"
+PREFER_LOCAL_OPENAI="${THCLAWS_PREFER_LOCAL_OPENAI:-1}"
+LOCAL_OPENAI_BASE_URL="${THCLAWS_LOCAL_OPENAI_BASE_URL:-http://127.0.0.1:8642/v1/chat/completions}"
+LOCAL_OPENAI_PROBE_URL="${THCLAWS_LOCAL_OPENAI_PROBE_URL:-http://127.0.0.1:8642/v1/models}"
+LOCAL_OPENAI_PROBE_TIMEOUT="${THCLAWS_LOCAL_OPENAI_PROBE_TIMEOUT:-1}"
+MAX_ITERATIONS="${THCLAWS_MAX_ITERATIONS:-1}"
+PERMISSION_MODE="${THCLAWS_PERMISSION_MODE:-ask}"
+DISALLOWED_TOOLS="${THCLAWS_DISALLOWED_TOOLS:-Bash,Edit,Write,Read,Glob,Grep,WebFetch,WebSearch}"
+LOG_DIR="$BASE/logs"
+SMOKE_DIR="$BASE/smoke"
+
+usage() {
+  cat >&2 <<'USAGE'
+Usage: thclaws-safe [--workdir DIR] [--model MODEL] [--max-iterations N] PROMPT...
+
+Controlled non-mutating thClaws CLI wrapper.
+Defaults:
+  model: gpt-5.4-mini
+  local OpenAI-compatible endpoint: http://127.0.0.1:8642/v1/chat/completions (if reachable)
+  fallback model when no key and no local OpenAI endpoint: ollama/qwen3.5:cloud
+  permission-mode: ask
+  max-iterations: 1
+  disallowed-tools: Bash,Edit,Write,Read,Glob,Grep,WebFetch,WebSearch
+
+Environment overrides:
+  THCLAWS_MODEL=...
+  THCLAWS_FALLBACK_MODEL=...
+  THCLAWS_AUTO_FALLBACK_LOCAL=1|0
+  THCLAWS_PREFER_LOCAL_OPENAI=1|0
+  THCLAWS_LOCAL_OPENAI_BASE_URL=...
+  THCLAWS_LOCAL_OPENAI_PROBE_URL=...
+  THCLAWS_LOCAL_OPENAI_PROBE_TIMEOUT=seconds
+USAGE
+}
+
+WORKDIR=""
+ARGS=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --workdir)
+      WORKDIR="${2:-}"; shift 2 ;;
+    --model)
+      MODEL="${2:-}"; shift 2 ;;
+    --max-iterations)
+      MAX_ITERATIONS="${2:-}"; shift 2 ;;
+    -h|--help-wrapper)
+      usage; exit 0 ;;
+    --)
+      shift; ARGS+=("$@"); break ;;
+    *)
+      ARGS+=("$1"); shift ;;
+  esac
+done
+
+if [[ ! -x "$CLI" ]]; then
+  echo "thclaws-safe: missing executable: $CLI" >&2
+  exit 127
+fi
+if [[ ${#ARGS[@]} -eq 0 ]]; then
+  usage
+  exit 64
+fi
+PROMPT="${ARGS[*]}"
+REQUESTED_MODEL="$MODEL"
+FALLBACK_REASON=""
+if [[ -z "${OPENAI_API_KEY:-}" ]]; then
+  if [[ -n "${OPENAI_BASE_URL:-}" ]]; then
+    :
+  elif [[ "$PREFER_LOCAL_OPENAI" != "0" ]] && command -v curl >/dev/null 2>&1 && curl -fsS --max-time "$LOCAL_OPENAI_PROBE_TIMEOUT" "$LOCAL_OPENAI_PROBE_URL" >/dev/null 2>&1; then
+    export OPENAI_BASE_URL="$LOCAL_OPENAI_BASE_URL"
+    FALLBACK_REASON="missing OPENAI_API_KEY -> using local OpenAI-compatible endpoint"
+  elif [[ "$AUTO_FALLBACK_LOCAL" != "0" && "$MODEL" != ollama/* ]]; then
+    MODEL="$FALLBACK_MODEL"
+    FALLBACK_REASON="missing OPENAI_API_KEY -> using local Ollama fallback"
+  fi
+fi
+mkdir -p "$LOG_DIR" "$SMOKE_DIR"
+if [[ -z "$WORKDIR" ]]; then
+  stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+  WORKDIR="$SMOKE_DIR/run-$stamp"
+fi
+mkdir -p "$WORKDIR"
+stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+log="$LOG_DIR/thclaws-safe-$stamp.log"
+{
+  echo "timestamp_utc=$stamp"
+  echo "current=$(readlink -f "$CURRENT" 2>/dev/null || printf '%s' "$CURRENT")"
+  echo "requested_model=$REQUESTED_MODEL"
+  echo "model=$MODEL"
+  echo "openai_base_url=${OPENAI_BASE_URL:-}"
+  echo "local_openai_probe_url=$LOCAL_OPENAI_PROBE_URL"
+  [[ -n "$FALLBACK_REASON" ]] && echo "fallback_reason=$FALLBACK_REASON"
+  echo "workdir=$WORKDIR"
+  echo "permission_mode=$PERMISSION_MODE"
+  echo "max_iterations=$MAX_ITERATIONS"
+  echo "disallowed_tools=$DISALLOWED_TOOLS"
+  echo "prompt=$PROMPT"
+  echo "--- output ---"
+} > "$log"
+
+set +e
+(
+  cd "$WORKDIR"
+  timeout "${THCLAWS_TIMEOUT:-150s}" "$CLI" \
+    --print \
+    --model "$MODEL" \
+    --permission-mode "$PERMISSION_MODE" \
+    --max-iterations "$MAX_ITERATIONS" \
+    --disallowed-tools "$DISALLOWED_TOOLS" \
+    "$PROMPT"
+) 2>&1 | tee -a "$log"
+status=${PIPESTATUS[0]}
+set -e
+printf '\n--- exit_code=%s ---\n' "$status" >> "$log"
+exit "$status"

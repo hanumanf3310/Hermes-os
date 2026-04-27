@@ -1,0 +1,62 @@
+{
+  "skill_id": "SKILL-GENERA-CLI-575",
+  "skill_slug": "gemini-cli",
+  "title": "Gemini CLI Skill",
+  "summary_1l": "",
+  "description": "",
+  "domain": "general",
+  "subdomain": "gemini",
+  "language": "mixed",
+  "tags": [
+    "rest",
+    "automation",
+    "api",
+    "testing",
+    "validation",
+    "script",
+    "qa",
+    "bash"
+  ],
+  "aliases": [
+    "gemini cli",
+    "gemini cli skill"
+  ],
+  "status": "active",
+  "version": "1.0.0",
+  "owner": "system",
+  "priority": "medium",
+  "trust_score": 0.8,
+  "usage_count": 0,
+  "helpful_count": 0,
+  "has_references": false,
+  "has_templates": false,
+  "has_scripts": true,
+  "has_examples": false,
+  "entry_file": "SKILL.md",
+  "references_dir": "references",
+  "templates_dir": "templates",
+  "scripts_dir": "scripts",
+  "examples_dir": "examples",
+  "constraints": [],
+  "compatibility": {
+    "os": [
+      "linux"
+    ],
+    "tools": []
+  },
+  "search": {
+    "boost_keywords": [
+      "rest",
+      "automation",
+      "api",
+      "testing",
+      "validation"
+    ],
+    "deprecated_penalty": 0,
+    "fts_enabled": true
+  },
+  "deprecated_reason": "",
+  "superseded_by": "",
+  "created_at": "2026-04-22T01:59:25.008743",
+  "updated_at": "2026-04-22T01:59:25.008746"
+}

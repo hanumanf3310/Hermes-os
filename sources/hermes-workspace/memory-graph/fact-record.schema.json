@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hermes.local/schemas/fact-record.json",
+  "title": "Fact Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "fact_id",
+    "content",
+    "category",
+    "fact_type",
+    "fact_star",
+    "fact_plus",
+    "verify_before_use",
+    "importance_level",
+    "verification_status",
+    "trust_score",
+    "confidence_score",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "fact_id": { "type": "integer", "minimum": 1 },
+    "content": { "type": "string", "minLength": 1 },
+    "category": { "type": "string", "enum": ["user_pref", "policy", "technical", "project", "learning", "tool", "other", "general"] },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "default": []
+    },
+    "source": {
+      "type": "string",
+      "enum": ["manual", "system", "imported", "learned", "inferred", "unknown"],
+      "default": "unknown"
+    },
+    "fact_type": { "type": "string", "enum": ["fact", "fact_plus", "fact_star", "fact_plus_star"] },
+    "fact_star": { "type": "boolean" },
+    "fact_plus": { "type": "boolean" },
+    "verify_before_use": { "type": "boolean" },
+    "importance_level": { "type": "string", "enum": ["normal", "important", "critical"] },
+    "star_reason": { "type": ["string", "null"] },
+    "learning_policy_id": { "type": ["string", "null"] },
+    "verified_by": { "type": ["string", "null"] },
+    "last_verified_at": { "type": ["string", "null"], "format": "date-time" },
+    "verification_status": { "type": "string", "enum": ["unverified", "verified", "needs_review", "rejected"] },
+    "trust_score": { "type": "number", "minimum": 0, "maximum": 1 },
+    "confidence_score": { "type": "number", "minimum": 0, "maximum": 1 },
+    "impact_scope": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "none",
+          "user_pref",
+          "learning",
+          "dashboard",
+          "workflow",
+          "policy",
+          "routing",
+          "safety",
+          "rollback",
+          "tooling",
+          "hermes_os",
+          "thclaws",
+          "omx",
+          "upstream_core"
+        ]
+      },
+      "default": ["none"]
+    },
+    "rollback_required": { "type": "boolean", "default": false },
+    "related_entities": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "default": []
+    },
+    "created_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": "string", "format": "date-time" },
+    "created_by": { "type": ["string", "null"] },
+    "updated_by": { "type": ["string", "null"] },
+    "notes": { "type": ["string", "null"] }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "fact_type": { "const": "fact" } } },
+      "then": {
+        "properties": {
+          "fact_star": { "const": false },
+          "fact_plus": { "const": false },
+          "verify_before_use": { "const": false },
+          "importance_level": { "const": "normal" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "fact_type": { "const": "fact_plus" } } },
+      "then": {
+        "properties": {
+          "fact_star": { "const": false },
+          "fact_plus": { "const": true }
+        },
+        "required": ["learning_policy_id"]
+      }
+    },
+    {
+      "if": { "properties": { "fact_type": { "const": "fact_star" } } },
+      "then": {
+        "properties": {
+          "fact_star": { "const": true },
+          "verify_before_use": { "const": true },
+          "importance_level": { "const": "critical" }
+        },
+        "required": ["star_reason"]
+      }
+    },
+    {
+      "if": { "properties": { "fact_type": { "const": "fact_plus_star" } } },
+      "then": {
+        "properties": {
+          "fact_plus": { "const": true },
+          "fact_star": { "const": true },
+          "verify_before_use": { "const": true },
+          "importance_level": { "const": "critical" }
+        },
+        "required": ["learning_policy_id", "star_reason"]
+      }
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+#!/usr/bin/env python3
+"""Shell command shim for Hermes OS mode disable."""
+
+from __future__ import annotations
+
+import os
+import sys
+
+SRC = "/home/hanuman3310/workspace/hermes-os-mode/src"
+if SRC not in sys.path:
+    sys.path.insert(0, SRC)
+
+from hermes_os_cli import main  # noqa: E402
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(["hermes-off", *sys.argv[1:]]))

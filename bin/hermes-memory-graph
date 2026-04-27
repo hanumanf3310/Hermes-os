@@ -1,0 +1,181 @@
+#!/bin/bash
+# Hermes Memory Graph Launcher
+# คำสั่งเดียวเปิด dashboard + fact-graph backend + public tunnel สำหรับมือถือ
+# Usage: hermes-memory-graph {up|down|status|restart}
+
+set -euo pipefail
+
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+ROOT="$HOME/hermes-workspace/memory-graph"
+RUNTIME_DIR="$HOME/.hermes/memory-graph"
+PID_FILE="$RUNTIME_DIR/memory-graph.pid"
+TUNNEL_PID_FILE="$RUNTIME_DIR/cloudflared.pid"
+TUNNEL_URL_FILE="$RUNTIME_DIR/cloudflared.url"
+LOG_FILE="$RUNTIME_DIR/memory-graph.log"
+TUNNEL_LOG_FILE="$RUNTIME_DIR/cloudflared.log"
+PORT="${PORT:-9130}"
+HOST="${HOST:-127.0.0.1}"
+PYTHON="${PYTHON:-$HOME/.hermes/hermes-agent/venv/bin/python3}"
+CLOUDFLARED="${CLOUDFLARED:-$HOME/.local/bin/cloudflared}"
+
+mkdir -p "$RUNTIME_DIR"
+
+info() { echo -e "${BLUE}ℹ️  $1${NC}"; }
+success() { echo -e "${GREEN}✅ $1${NC}"; }
+warn() { echo -e "${YELLOW}⚠️  $1${NC}"; }
+
+stop_pid() {
+  local pid="$1"
+  if kill -0 "$pid" 2>/dev/null; then
+    kill "$pid" 2>/dev/null || true
+    for _ in {1..20}; do
+      if ! kill -0 "$pid" 2>/dev/null; then
+        return 0
+      fi
+      sleep 0.25
+    done
+    kill -9 "$pid" 2>/dev/null || true
+  fi
+}
+
+get_tunnel_url() {
+  if [[ -f "$TUNNEL_LOG_FILE" ]]; then
+    grep -oE 'https://[^[:space:]]+\.trycloudflare\.com' "$TUNNEL_LOG_FILE" | head -1 || true
+  fi
+}
+
+start_all() {
+  info "ตรวจสอบ prerequisites..."
+  [[ -d "$ROOT" ]] || { echo "ไม่เจอ $ROOT"; exit 1; }
+  [[ -x "$PYTHON" ]] || { echo "ไม่เจอ python ที่ $PYTHON"; exit 1; }
+  [[ -x "$CLOUDFLARED" ]] || { echo "ไม่เจอ cloudflared ที่ $CLOUDFLARED"; exit 1; }
+  success "พร้อมใช้งาน"
+
+  if [[ -f "$PID_FILE" ]]; then
+    old_pid="$(cat "$PID_FILE" 2>/dev/null || true)"
+    [[ -n "$old_pid" ]] && stop_pid "$old_pid"
+    rm -f "$PID_FILE"
+  fi
+  if [[ -f "$TUNNEL_PID_FILE" ]]; then
+    old_tunnel_pid="$(cat "$TUNNEL_PID_FILE" 2>/dev/null || true)"
+    [[ -n "$old_tunnel_pid" ]] && stop_pid "$old_tunnel_pid"
+    rm -f "$TUNNEL_PID_FILE"
+  fi
+
+  info "เปิด Hermes Memory Graph server (port $PORT)..."
+  cd "$ROOT"
+  nohup "$PYTHON" "$ROOT/memory_graph_server.py" >"$LOG_FILE" 2>&1 &
+  server_pid=$!
+  echo "$server_pid" > "$PID_FILE"
+
+  for _ in {1..40}; do
+    if curl -fsS "http://$HOST:$PORT/health" >/dev/null 2>&1; then
+      success "Server พร้อมใช้งาน"
+      break
+    fi
+    if ! kill -0 "$server_pid" 2>/dev/null; then
+      echo "Server ล้มเหลว ดู log: $LOG_FILE" >&2
+      exit 1
+    fi
+    sleep 0.25
+  done
+
+  info "สร้าง public tunnel สำหรับมือถือ..."
+  : > "$TUNNEL_LOG_FILE"
+  nohup "$CLOUDFLARED" tunnel --config /dev/null --url "http://$HOST:$PORT" --no-autoupdate --protocol http2 >"$TUNNEL_LOG_FILE" 2>&1 &
+  tunnel_pid=$!
+  echo "$tunnel_pid" > "$TUNNEL_PID_FILE"
+
+  tunnel_url=""
+  for _ in {1..80}; do
+    tunnel_url="$(get_tunnel_url)"
+    if [[ -n "$tunnel_url" ]]; then
+      break
+    fi
+    if ! kill -0 "$tunnel_pid" 2>/dev/null; then
+      echo "Cloudflared ล้มเหลว ดู log: $TUNNEL_LOG_FILE" >&2
+      exit 1
+    fi
+    sleep 0.25
+  done
+
+  if [[ -n "$tunnel_url" ]]; then
+    echo "$tunnel_url" > "$TUNNEL_URL_FILE"
+    success "Mobile URL: $tunnel_url"
+  else
+    warn "ยังไม่เจอ public URL ใน log"
+  fi
+
+  echo ""
+  echo "=============================="
+  success "Hermes Memory Graph พร้อมใช้งาน!"
+  echo ""
+  echo "📱 เปิดจากมือถือได้ที่:"
+  if [[ -f "$TUNNEL_URL_FILE" ]]; then
+    echo "   $(cat "$TUNNEL_URL_FILE")"
+  else
+    echo "   (รอ URL จาก cloudflared อยู่)"
+  fi
+  echo ""
+  echo "🔗 Local: http://$HOST:$PORT/dashboard.html"
+  echo "🔌 API:   http://$HOST:$PORT/api/fact-graph"
+}
+
+stop_all() {
+  info "กำลังปิด Hermes Memory Graph..."
+  if [[ -f "$PID_FILE" ]]; then
+    pid="$(cat "$PID_FILE" 2>/dev/null || true)"
+    [[ -n "$pid" ]] && stop_pid "$pid"
+    rm -f "$PID_FILE"
+  fi
+  if [[ -f "$TUNNEL_PID_FILE" ]]; then
+    pid="$(cat "$TUNNEL_PID_FILE" 2>/dev/null || true)"
+    [[ -n "$pid" ]] && stop_pid "$pid"
+    rm -f "$TUNNEL_PID_FILE"
+  fi
+  pkill -f "$ROOT/memory_graph_server.py" 2>/dev/null || true
+  pkill -f "cloudflared tunnel --config /dev/null --url http://$HOST:$PORT" 2>/dev/null || true
+  rm -f "$TUNNEL_URL_FILE"
+  success "ปิดทั้งหมดแล้ว"
+}
+
+show_status() {
+  echo ""
+  echo "📊 Hermes Memory Graph Status"
+  echo "============================"
+  if curl -fsS "http://$HOST:$PORT/health" >/dev/null 2>&1; then
+    echo "🟢 Local: http://$HOST:$PORT/dashboard.html"
+  else
+    echo "🔴 Local: ไม่ทำงาน"
+  fi
+  if [[ -f "$TUNNEL_URL_FILE" ]]; then
+    echo "🌐 Public: $(cat "$TUNNEL_URL_FILE")"
+  else
+    echo "🌐 Public: ยังไม่มี URL"
+  fi
+  echo ""
+}
+
+case "${1:-up}" in
+  up|start)
+    start_all
+    ;;
+  down|stop)
+    stop_all
+    ;;
+  status)
+    show_status
+    ;;
+  restart)
+    stop_all
+    sleep 2
+    start_all
+    ;;
+  *)
+    echo "ใช้: $0 {up|down|status|restart}"
+    ;;
+esac

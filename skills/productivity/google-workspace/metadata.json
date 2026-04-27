@@ -1,0 +1,61 @@
+{
+  "skill_id": "SKILL-GENERA-WORKSPACE-423",
+  "skill_slug": "google-workspace",
+  "title": "Google Workspace",
+  "summary_1l": "",
+  "description": "",
+  "domain": "general",
+  "subdomain": "google",
+  "language": "mixed",
+  "tags": [
+    "rest",
+    "testing",
+    "validation",
+    "github",
+    "qa",
+    "settings",
+    "integration",
+    "oauth"
+  ],
+  "aliases": [
+    "google workspace"
+  ],
+  "status": "active",
+  "version": "1.0.0",
+  "owner": "system",
+  "priority": "medium",
+  "trust_score": 0.8,
+  "usage_count": 0,
+  "helpful_count": 0,
+  "has_references": true,
+  "has_templates": false,
+  "has_scripts": true,
+  "has_examples": false,
+  "entry_file": "SKILL.md",
+  "references_dir": "references",
+  "templates_dir": "templates",
+  "scripts_dir": "scripts",
+  "examples_dir": "examples",
+  "constraints": [],
+  "compatibility": {
+    "os": [
+      "linux"
+    ],
+    "tools": []
+  },
+  "search": {
+    "boost_keywords": [
+      "rest",
+      "testing",
+      "validation",
+      "github",
+      "qa"
+    ],
+    "deprecated_penalty": 0,
+    "fts_enabled": true
+  },
+  "deprecated_reason": "",
+  "superseded_by": "",
+  "created_at": "2026-04-22T01:59:24.993091",
+  "updated_at": "2026-04-22T01:59:24.993095"
+}

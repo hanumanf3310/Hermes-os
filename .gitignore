@@ -1,0 +1,31 @@
+# Secrets / environment
+Repo.env
+.env
+.env.*
+
+# Logs / runtime
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+
+# Python / node / build noise
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+env/
+node_modules/
+target/
+dist/
+build/
+coverage/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/

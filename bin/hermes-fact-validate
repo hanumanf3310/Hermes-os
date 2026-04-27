@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+VALIDATOR="/home/hanuman3310/hermes-workspace/memory-graph/fact_validator.py"
+if [[ ! -f "$VALIDATOR" ]]; then
+  echo "fact validator not found: $VALIDATOR" >&2
+  exit 1
+fi
+
+exec python "$VALIDATOR" "$@"

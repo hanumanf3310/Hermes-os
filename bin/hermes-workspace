@@ -1,0 +1,172 @@
+#!/bin/bash
+#
+# Hermes Workspace Launcher
+# คำสั่งเดียวเปิดระบบ Hermes Workspace ทั้งหมด
+# Usage: ./hermes-workspace-launcher.sh {up|down|status}
+
+set -e
+
+# Colors
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+HERMES_WORKSPACE="$HOME/hermes-workspace"
+HERMES_AGENT="$HOME/hermes-agent"
+PID_DIR="$HOME/.hermes/workspace-pids"
+
+mkdir -p "$PID_DIR"
+
+echo_info() { echo -e "${BLUE}ℹ️  $1${NC}"; }
+echo_success() { echo -e "${GREEN}✅ $1${NC}"; }
+echo_warn() { echo -e "${YELLOW}⚠️  $1${NC}"; }
+
+check_prereq() {
+    echo_info "ตรวจสอบระบบ..."
+    [[ ! -d "$HERMES_WORKSPACE" ]] && { echo "ไม่เจอ $HERMES_WORKSPACE"; exit 1; }
+    [[ ! -d "$HERMES_AGENT" ]] && { echo "ไม่เจอ $HERMES_AGENT"; exit 1; }
+    echo_success "พร้อมใช้งาน"
+}
+
+get_ngrok_url() {
+    sleep 3
+    curl -s http://127.0.0.1:4040/api/tunnels 2>/dev/null | \
+        python3 -c "import json,sys; d=json.load(sys.stdin); print([t['public_url'] for t in d.get('tunnels',[])][0])" 2>/dev/null || echo ""
+}
+
+get_cf_url() {
+    sleep 8
+    grep -o 'https://[^[:space:]]*\.trycloudflare\.com' /tmp/cf_8642.log 2>/dev/null | head -1
+}
+
+start_all() {
+    check_prereq
+    
+    echo ""
+    echo "🚀 กำลังเปิด Hermes Workspace..."
+    echo "================================"
+    
+    # 1. Start UI
+    echo_info "เปิด Hermes Workspace UI (port 3000)..."
+    cd "$HERMES_WORKSPACE"
+    export PATH="$HOME/.local/share/pnpm:$PATH"
+    nohup pnpm dev > "$PID_DIR/ui.log" 2>&1 &
+    echo $! > "$PID_DIR/ui.pid"
+    sleep 5
+    echo_success "UI พร้อมใช้งาน"
+    
+    # 2. Start WebAPI
+    echo_info "เปิด Hermes WebAPI (port 8642)..."
+    cd "$HERMES_AGENT"
+    PYTHON="$HOME/.hermes/hermes-agent/venv/bin/python"
+    PYTHONPATH="$HERMES_AGENT" nohup "$PYTHON" -m uvicorn webapi.app:app \
+        --host 0.0.0.0 --port 8642 > "$PID_DIR/api.log" 2>&1 &
+    echo $! > "$PID_DIR/api.pid"
+    sleep 5
+    echo_success "WebAPI พร้อมใช้งาน"
+    
+    # 3. Start ngrok
+    echo_info "สร้าง public tunnel สำหรับ UI..."
+    pkill -f "ngrok http 3000" 2>/dev/null || true
+    sleep 1
+    nohup ngrok http 3000 > "$PID_DIR/ngrok.log" 2>&1 &
+    echo $! > "$PID_DIR/ngrok.pid"
+    NGROK_URL=$(get_ngrok_url)
+    if [[ -n "$NGROK_URL" ]]; then
+        echo "$NGROK_URL" > "$PID_DIR/ngrok.url"
+        echo_success "UI Public URL: $NGROK_URL"
+    fi
+    
+    # 4. Start Cloudflare
+    echo_info "สร้าง public tunnel สำหรับ API..."
+    rm -f /tmp/cf_8642.log
+    nohup "$HOME/.local/bin/cloudflared" tunnel --url http://localhost:8642 \
+        > /tmp/cf_8642.log 2>&1 &
+    echo $! > "$PID_DIR/cf.pid"
+    CF_URL=$(get_cf_url)
+    if [[ -n "$CF_URL" ]]; then
+        echo "$CF_URL" > "$PID_DIR/cf.url"
+        echo_success "API Public URL: $CF_URL"
+    fi
+    
+    echo ""
+    echo "================================"
+    echo_success "Hermes Workspace พร้อมใช้งาน!"
+    echo ""
+    echo "📱 เปิดบนมือถือ:"
+    [[ -f "$PID_DIR/ngrok.url" ]] && echo "   UI: $(cat "$PID_DIR/ngrok.url")"
+    echo ""
+    echo "💡 Tips:"
+    echo "   - รอ Tunnel 10-15 วินาทีถ้ายังไม่ตอบสนอง"
+    echo "   - กด Auto-connect ใน UI เพื่อเชื่อมต่อ Backend"
+}
+
+stop_all() {
+    echo_info "กำลังปิด Hermes Workspace..."
+    
+    for f in "$PID_DIR"/*.pid; do
+        [[ -f "$f" ]] && kill "$(cat "$f")" 2>/dev/null && echo "ปิด PID $(cat "$f")"
+        rm -f "$f"
+    done
+    
+    pkill -f "pnpm dev" 2>/dev/null || true
+    pkill -f "uvicorn webapi" 2>/dev/null || true
+    pkill -f "ngrok http 3000" 2>/dev/null || true
+    pkill -f "cloudflared.*8642" 2>/dev/null || true
+    
+    rm -f "$PID_DIR"/*.url /tmp/cf_8642.log
+    echo_success "ปิดทั้งหมดแล้ว"
+}
+
+show_status() {
+    echo ""
+    echo "📊 Hermes Workspace Status"
+    echo "=========================="
+    
+    # Check UI
+    if curl -s http://localhost:3000 > /dev/null 2>&1; then
+        echo "🟢 UI:     http://localhost:3000"
+    else
+        echo "🔴 UI:     ไม่ทำงาน"
+    fi
+    
+    # Check API
+    if curl -s http://localhost:8642/health > /dev/null 2>&1; then
+        echo "🟢 API:    http://localhost:8642"
+    else
+        echo "🔴 API:    ไม่ทำงาน"
+    fi
+    
+    # Show URLs
+    [[ -f "$PID_DIR/ngrok.url" ]] && echo "🌐 UI Public:  $(cat "$PID_DIR/ngrok.url")"
+    [[ -f "$PID_DIR/cf.url" ]] && echo "🔌 API Public: $(cat "$PID_DIR/cf.url")"
+    echo ""
+}
+
+# Main
+case "${1:-up}" in
+    up|start)
+        start_all
+        ;;
+    down|stop)
+        stop_all
+        ;;
+    status)
+        show_status
+        ;;
+    restart)
+        stop_all
+        sleep 2
+        start_all
+        ;;
+    *)
+        echo "ใช้: $0 {up|down|status|restart}"
+        echo ""
+        echo "คำสั่ง:"
+        echo "  up      เปิดระบบทั้งหมด (ค่าเริ่มต้น)"
+        echo "  down    ปิดระบบทั้งหมด"
+        echo "  status  ดูสถานะ"
+        echo "  restart รีสตาร์ทระบบ"
+        ;;
+esac

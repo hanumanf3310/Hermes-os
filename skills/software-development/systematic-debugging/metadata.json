@@ -1,0 +1,63 @@
+{
+  "skill_id": "SKILL-GENERA-DEBUGGING-068",
+  "skill_slug": "systematic-debugging",
+  "title": "Systematic Debugging",
+  "summary_1l": "",
+  "description": "",
+  "domain": "general",
+  "subdomain": "systematic",
+  "language": "mixed",
+  "tags": [
+    "rest",
+    "sql",
+    "release",
+    "devops",
+    "testing",
+    "validation",
+    "qa",
+    "debug"
+  ],
+  "aliases": [
+    "systematic debugging",
+    "ดีบั๊ก",
+    "ดีบั๊ก systematic ging"
+  ],
+  "status": "active",
+  "version": "1.0.0",
+  "owner": "system",
+  "priority": "medium",
+  "trust_score": 0.8,
+  "usage_count": 0,
+  "helpful_count": 0,
+  "has_references": false,
+  "has_templates": false,
+  "has_scripts": false,
+  "has_examples": false,
+  "entry_file": "SKILL.md",
+  "references_dir": "references",
+  "templates_dir": "templates",
+  "scripts_dir": "scripts",
+  "examples_dir": "examples",
+  "constraints": [],
+  "compatibility": {
+    "os": [
+      "linux"
+    ],
+    "tools": []
+  },
+  "search": {
+    "boost_keywords": [
+      "rest",
+      "sql",
+      "release",
+      "devops",
+      "testing"
+    ],
+    "deprecated_penalty": 0,
+    "fts_enabled": true
+  },
+  "deprecated_reason": "",
+  "superseded_by": "",
+  "created_at": "2026-04-22T01:59:25.002151",
+  "updated_at": "2026-04-22T01:59:25.002155"
+}
