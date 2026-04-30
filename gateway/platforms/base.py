@@ -1512,7 +1512,7 @@ class BasePlatformAdapter(ABC):
             # session lifecycle and its cleanup races with the running task
             # (see PR #4926).
             cmd = event.get_command()
-            if cmd in ("approve", "deny", "status", "checkpoint", "stop", "new", "reset", "background", "restart", "hermes-os", "hermes_os", "hermes-memory-graph", "hermes_memory_graph", "gemini-cli", "gemini_cli", "gemini-research", "gemini_research"):
+            if cmd in ("approve", "deny", "status", "checkpoint", "stop", "new", "reset", "background", "restart", "hermes-os", "hermes_os", "hermes-memory-graph", "hermes_memory_graph", "hermes-workspace", "hermes_workspace", "workspace", "gemini-cli", "gemini_cli", "gemini-research", "gemini_research"):
                 logger.debug(
                     "[%s] Command '/%s' bypassing active-session guard for %s",
                     self.name, cmd, session_key,
