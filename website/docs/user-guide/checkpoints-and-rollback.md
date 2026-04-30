@@ -29,6 +29,23 @@ The agent creates **at most one checkpoint per directory per turn**, so long-run
 | `/rollback diff <N>` | Preview diff between checkpoint N and current state |
 | `/rollback <N> <file>` | Restore a single file from checkpoint N |
 
+## Go/No-Go Checkpoints (`/checkpoint`)
+
+`/checkpoint` is the *decision gate* for the work itself: it helps the agent decide whether to continue, pause, or redirect when the current path risks looping or lacks evidence.
+
+Use it when you want a compact, explicit answer before more work happens:
+
+```text
+/checkpoint --goal "finish dashboard" --current "live backend wired" --evidence "browser console + tests" --alternatives "switch route"
+```
+
+Decision meanings:
+- `GO` — continue with the smallest verified next step
+- `HOLD` — gather more evidence or summarize the current state first
+- `REDIRECT` — switch path, narrow scope, or stop looping
+
+This command is separate from filesystem checkpoints and `/rollback`.
+
 ## How Checkpoints Work
 
 At a high level:

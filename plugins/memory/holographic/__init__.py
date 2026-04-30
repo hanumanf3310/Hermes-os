@@ -64,6 +64,17 @@ FACT_STORE_SCHEMA = {
             "fact_id": {"type": "integer", "description": "Fact ID for 'update'/'remove'."},
             "category": {"type": "string", "enum": ["user_pref", "project", "tool", "general"]},
             "tags": {"type": "string", "description": "Comma-separated tags."},
+            "fact_type": {"type": "string", "enum": ["fact", "fact_plus", "fact_star"]},
+            "fact_star": {"type": "boolean"},
+            "fact_plus": {"type": "boolean"},
+            "verify_before_use": {"type": "boolean"},
+            "importance_level": {"type": "string", "enum": ["normal", "important", "critical"]},
+            "star_reason": {"type": "string"},
+            "learning_policy_id": {"type": "string"},
+            "verification_status": {"type": "string", "enum": ["unverified", "verified", "needs_review", "rejected"]},
+            "rollback_required": {"type": "boolean"},
+            "impact_scope": {"type": "string", "description": "JSON list or comma-separated scopes."},
+            "source": {"type": "string", "enum": ["manual", "system", "imported", "learned", "inferred", "unknown"]},
             "trust_delta": {"type": "number", "description": "Trust adjustment for 'update'."},
             "min_trust": {"type": "number", "description": "Minimum trust filter (default: 0.3)."},
             "limit": {"type": "integer", "description": "Max results (default: 10)."},
@@ -266,6 +277,17 @@ class HolographicMemoryProvider(MemoryProvider):
                     args["content"],
                     category=args.get("category", "general"),
                     tags=args.get("tags", ""),
+                    fact_type=args.get("fact_type"),
+                    fact_star=args.get("fact_star"),
+                    fact_plus=args.get("fact_plus"),
+                    verify_before_use=args.get("verify_before_use"),
+                    importance_level=args.get("importance_level"),
+                    star_reason=args.get("star_reason"),
+                    learning_policy_id=args.get("learning_policy_id"),
+                    verification_status=args.get("verification_status"),
+                    rollback_required=args.get("rollback_required"),
+                    impact_scope=args.get("impact_scope"),
+                    source=args.get("source", "unknown"),
                 )
                 return json.dumps({"fact_id": fact_id, "status": "added"})
 
@@ -275,6 +297,11 @@ class HolographicMemoryProvider(MemoryProvider):
                     category=args.get("category"),
                     min_trust=float(args.get("min_trust", self._min_trust)),
                     limit=int(args.get("limit", 10)),
+                    fact_type=args.get("fact_type"),
+                    fact_star=args.get("fact_star"),
+                    fact_plus=args.get("fact_plus"),
+                    verify_before_use=args.get("verify_before_use"),
+                    verification_status=args.get("verification_status"),
                 )
                 return json.dumps({"results": results, "count": len(results)})
 
@@ -283,6 +310,11 @@ class HolographicMemoryProvider(MemoryProvider):
                     args["entity"],
                     category=args.get("category"),
                     limit=int(args.get("limit", 10)),
+                    fact_type=args.get("fact_type"),
+                    fact_star=args.get("fact_star"),
+                    fact_plus=args.get("fact_plus"),
+                    verify_before_use=args.get("verify_before_use"),
+                    verification_status=args.get("verification_status"),
                 )
                 return json.dumps({"results": results, "count": len(results)})
 
@@ -291,6 +323,11 @@ class HolographicMemoryProvider(MemoryProvider):
                     args["entity"],
                     category=args.get("category"),
                     limit=int(args.get("limit", 10)),
+                    fact_type=args.get("fact_type"),
+                    fact_star=args.get("fact_star"),
+                    fact_plus=args.get("fact_plus"),
+                    verify_before_use=args.get("verify_before_use"),
+                    verification_status=args.get("verification_status"),
                 )
                 return json.dumps({"results": results, "count": len(results)})
 
@@ -302,6 +339,11 @@ class HolographicMemoryProvider(MemoryProvider):
                     entities,
                     category=args.get("category"),
                     limit=int(args.get("limit", 10)),
+                    fact_type=args.get("fact_type"),
+                    fact_star=args.get("fact_star"),
+                    fact_plus=args.get("fact_plus"),
+                    verify_before_use=args.get("verify_before_use"),
+                    verification_status=args.get("verification_status"),
                 )
                 return json.dumps({"results": results, "count": len(results)})
 
@@ -309,6 +351,11 @@ class HolographicMemoryProvider(MemoryProvider):
                 results = retriever.contradict(
                     category=args.get("category"),
                     limit=int(args.get("limit", 10)),
+                    fact_type=args.get("fact_type"),
+                    fact_star=args.get("fact_star"),
+                    fact_plus=args.get("fact_plus"),
+                    verify_before_use=args.get("verify_before_use"),
+                    verification_status=args.get("verification_status"),
                 )
                 return json.dumps({"results": results, "count": len(results)})
 
@@ -319,6 +366,17 @@ class HolographicMemoryProvider(MemoryProvider):
                     trust_delta=float(args["trust_delta"]) if "trust_delta" in args else None,
                     tags=args.get("tags"),
                     category=args.get("category"),
+                    fact_type=args.get("fact_type"),
+                    fact_star=args.get("fact_star"),
+                    fact_plus=args.get("fact_plus"),
+                    verify_before_use=args.get("verify_before_use"),
+                    importance_level=args.get("importance_level"),
+                    star_reason=args.get("star_reason"),
+                    learning_policy_id=args.get("learning_policy_id"),
+                    verification_status=args.get("verification_status"),
+                    rollback_required=args.get("rollback_required"),
+                    impact_scope=args.get("impact_scope"),
+                    source=args.get("source", "unknown"),
                 )
                 return json.dumps({"updated": updated})
 
@@ -331,6 +389,11 @@ class HolographicMemoryProvider(MemoryProvider):
                     category=args.get("category"),
                     min_trust=float(args.get("min_trust", 0.0)),
                     limit=int(args.get("limit", 10)),
+                    fact_type=args.get("fact_type"),
+                    fact_star=args.get("fact_star"),
+                    fact_plus=args.get("fact_plus"),
+                    verify_before_use=args.get("verify_before_use"),
+                    verification_status=args.get("verification_status"),
                 )
                 return json.dumps({"facts": facts, "count": len(facts)})
 

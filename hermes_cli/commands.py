@@ -162,6 +162,16 @@ COMMAND_REGISTRY: list[CommandDef] = [
     CommandDef("update", "Update Hermes Agent to the latest version", "Info",
                gateway_only=True),
     CommandDef("debug", "Upload debug report (system info + logs) and get shareable links", "Info"),
+    CommandDef("gemini-cli", "Run Gemini CLI and fall back to Hermes OS when unavailable", "Info",
+               aliases=("gemini_cli",), args_hint="[--model <model>] <prompt>"),
+    CommandDef("gemini-research", "Run a Hermes → Gemini → Hermes verification workflow", "Info",
+               aliases=("gemini_research",), args_hint="[--question ... --evidence ... --model ...]"),
+    CommandDef("hermes-memory-graph", "Open Hermes Memory Graph dashboard and show status", "Info",
+               aliases=("hermes_memory_graph",)),
+    CommandDef("checkpoint", "Run the go/no-go checkpoint gate (GO, HOLD, or REDIRECT)", "Session",
+               args_hint="[--goal ... --current ... --evidence ... --alternatives ...]"),
+    CommandDef("hermes-os", "Enter and control Hermes OS mode - on/off/status/dashboard/policy/fleet/rtk", "Info",
+               aliases=("hermes_os",), args_hint="[on|off|status|dashboard|policy|fleet|rtk]"),
 
     # Exit
     CommandDef("quit", "Exit the CLI", "Exit",
