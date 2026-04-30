@@ -5477,6 +5477,8 @@ class HermesCLI:
             self._handle_continue_command()
         elif canonical == "model":
             self._handle_model_switch(cmd_original)
+        elif canonical == "gpts":
+            self._handle_gpts_command(cmd_original)
         elif canonical == "provider":
             self._show_model_and_providers()
 
@@ -5531,6 +5533,8 @@ class HermesCLI:
             self._handle_gemini_research_command(cmd_original)
         elif canonical == "hermes-memory-graph":
             self._handle_memory_graph_command(cmd_original)
+        elif canonical == "hermes-workspace":
+            self._handle_workspace_command(cmd_original)
         elif canonical == "checkpoint":
             self._handle_checkpoint_command(cmd_original)
         elif canonical == "hermes-os":
@@ -6111,6 +6115,80 @@ class HermesCLI:
             next_prompt = result.verification_prompt if result.available else result.fallback_prompt
             self._pending_input.put(next_prompt)
 
+    def _handle_gpts_command(self, cmd: str) -> None:
+        """Handle /gpts — show Codex GPT status and rate limits."""
+        from hermes_cli import codex_bridge
+
+        def emit(text: str) -> None:
+            printer = getattr(self, "_console_print", None)
+            if callable(printer):
+                printer(text)
+            elif getattr(self, "console", None) is not None:
+                self.console.print(text)
+            else:
+                print(text)
+
+        try:
+            args = cmd or ""
+            debug = "--debug" in args
+            if "--compare" in args:
+                emit(codex_bridge.format_comparison_rich(codex_bridge.compare_plans()))
+                return
+            status = codex_bridge.get_codex_status_via_exec(timeout=60)
+            if status is None:
+                emit("🤖 Codex GPT Status\n\nUnable to retrieve live Codex status.\nStale cached/session fallback is disabled.\nSource: codex exec live probe")
+                return
+            emit(codex_bridge.format_status_rich(status, show_source=True, debug=debug))
+        except Exception as exc:
+            emit(f"❌ Codex GPT Status error: {exc}")
+
+    @staticmethod
+    def _format_gpts_status_cli(data) -> str:
+        if not data:
+            return (
+                "🤖 Codex GPT Status\n\n"
+                "❌ ไม่พบข้อมูล Codex status แบบ realtime\n"
+                "Source: Codex exec/session bridge\n"
+                "Verify: https://chatgpt.com/codex/cloud/settings/analytics#usage"
+            )
+        return "\n".join([
+            "🤖 Codex GPT Status",
+            "",
+            "📊 Context Usage",
+            f"   {data.get('context_left_pct', 0)}% เหลือ ({int(data.get('context_used', 0)):,} / {int(data.get('context_window', 0)):,} tokens)",
+            "",
+            "5h Limit",
+            f"   ใช้ไป: {float(data.get('used_5h_pct', 0)):.0f}% (เหลือ {float(data.get('left_5h_pct', 0)):.0f}%)",
+            f"   รีเซ็ต: {data.get('reset_5h', 'unknown')}",
+            "",
+            "7d Limit",
+            f"   ใช้ไป: {float(data.get('used_7d_pct', 0)):.0f}% (เหลือ {float(data.get('left_7d_pct', 0)):.0f}%)",
+            f"   รีเซ็ต: {data.get('reset_7d', 'unknown')}",
+            "",
+            f"💎 Plan: {str(data.get('plan_type', 'unknown')).upper()}",
+            f"📁 Source: {data.get('source', 'unknown')}",
+            "🔎 Verify: https://chatgpt.com/codex/cloud/settings/analytics#usage",
+        ])
+
+    @staticmethod
+    def _format_gpts_compare_cli(result) -> str:
+        plan_a = result.get("plan_a", {}) if isinstance(result, dict) else {}
+        plan_b = result.get("plan_b", {}) if isinstance(result, dict) else {}
+        winner = result.get("winner", "N/A") if isinstance(result, dict) else "N/A"
+        speedup = result.get("speedup", "N/A") if isinstance(result, dict) else "N/A"
+        lines = [
+            "🔬 A/B Test: Plan A vs Plan B",
+            "",
+            f"PLAN A: {'OK' if plan_a.get('success') else 'FAIL'} ({plan_a.get('latency_ms', 'n/a')} ms)",
+            f"Source: {(plan_a.get('data') or {}).get('source', 'unknown')}",
+            "",
+            f"PLAN B: {'OK' if plan_b.get('success') else 'FAIL'} ({plan_b.get('latency_ms', 'n/a')} ms)",
+            f"Source: {(plan_b.get('data') or {}).get('source', 'unknown')}",
+            "",
+            f"🏆 Winner: Plan {winner} ({speedup}x faster)",
+        ]
+        return "\n".join(lines)
+
     def _handle_memory_graph_command(self, cmd: str) -> None:
         """Open Hermes Memory Graph and print the current status."""
         try:
@@ -6120,6 +6198,26 @@ class HermesCLI:
             self.console.print(format_memory_graph_message(status))
         except Exception as e:
             self.console.print(f"❌ Failed to open Hermes Memory Graph: {e}")
+
+    def _handle_workspace_command(self, cmd: str) -> None:
+        """Launch/report Hermes Workspace UI/API and public mobile URLs."""
+        from hermes_cli.workspace_launcher import (
+            format_workspace_launcher_message,
+            parse_workspace_launcher_request,
+            run_workspace_launcher,
+        )
+
+        parts = cmd.strip().split(maxsplit=1)
+        args = parts[1].strip() if len(parts) > 1 else ""
+        request, error = parse_workspace_launcher_request(args)
+        if error or request is None:
+            self.console.print(error or "Usage: /hermes_workspace [up|status|down|restart]")
+            return
+        try:
+            result = run_workspace_launcher(request)
+            self.console.print(format_workspace_launcher_message(result))
+        except Exception as e:
+            self.console.print(f"❌ Failed to open Hermes Workspace: {e}")
 
     def _handle_checkpoint_command(self, cmd: str) -> None:
         """Run the checkpoint / go-no-go gate and print the decision card."""

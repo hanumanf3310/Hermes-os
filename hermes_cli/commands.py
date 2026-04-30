@@ -101,6 +101,7 @@ COMMAND_REGISTRY: list[CommandDef] = [
     CommandDef("config", "Show current configuration", "Configuration",
                cli_only=True),
     CommandDef("model", "Switch model for this session", "Configuration", args_hint="[model] [--global]"),
+    CommandDef("gpts", "Show Codex GPT status and rate limits", "Info", args_hint="[--compare|--debug]"),
     CommandDef("provider", "Show available providers and current provider",
                "Configuration"),
 
@@ -168,6 +169,9 @@ COMMAND_REGISTRY: list[CommandDef] = [
                aliases=("gemini_research",), args_hint="[--question ... --evidence ... --model ...]"),
     CommandDef("hermes-memory-graph", "Open Hermes Memory Graph dashboard and show status", "Info",
                aliases=("hermes_memory_graph",)),
+    CommandDef("hermes-workspace", "Launch Hermes Workspace UI/API and show mobile URLs", "Info",
+               aliases=("hermes_workspace", "workspace"), args_hint="[up|status|down|restart]",
+               subcommands=("up", "status", "down", "restart")),
     CommandDef("checkpoint", "Run the go/no-go checkpoint gate (GO, HOLD, or REDIRECT)", "Session",
                args_hint="[--goal ... --current ... --evidence ... --alternatives ...]"),
     CommandDef("hermes-os", "Enter and control Hermes OS mode - on/off/status/dashboard/policy/fleet/rtk", "Info",

@@ -2746,8 +2746,10 @@ class GatewayRunner:
 
             # /background must bypass the running-agent guard — it starts a
             # parallel task and must never interrupt the active conversation.
-            if _cmd_def_inner and _cmd_def_inner.name == "background":
-                return await self._handle_background_command(event)
+            if _cmd_def_inner and _cmd_def_inner.name in ("background", "hermes-workspace"):
+                if _cmd_def_inner.name == "background":
+                    return await self._handle_background_command(event)
+                return await self._handle_workspace_command(event)
 
             if event.message_type == MessageType.PHOTO:
                 logger.debug("PRIORITY photo follow-up for session %s — queueing without interrupt", _quick_key[:20])
@@ -2842,6 +2844,9 @@ class GatewayRunner:
         if canonical == "model":
             return await self._handle_model_command(event)
 
+        if canonical == "gpts":
+            return await self._handle_gpts_command(event)
+
         if canonical == "provider":
             return await self._handle_provider_command(event)
 
@@ -2911,6 +2916,9 @@ class GatewayRunner:
 
         if canonical == "hermes-memory-graph":
             return await self._handle_memory_graph_command(event)
+
+        if canonical == "hermes-workspace":
+            return await self._handle_workspace_command(event)
 
         if canonical == "checkpoint":
             return await self._handle_checkpoint_command(event)
@@ -6791,6 +6799,72 @@ class GatewayRunner:
         )
         return format_gemini_workflow_result(result)
 
+    async def _handle_gpts_command(self, event: MessageEvent) -> str:
+        """Handle /gpts — show Codex GPT status and rate limits."""
+        from hermes_cli import codex_bridge
+
+        try:
+            args = event.get_command_args().strip()
+            debug = "--debug" in args
+            if "--compare" in args:
+                return codex_bridge.format_comparison_markdown(codex_bridge.compare_plans())
+            status = codex_bridge.get_codex_status_via_exec(timeout=60)
+            if status is None:
+                return "🤖 **Codex GPT Status**\n\nUnable to retrieve live Codex status.\nStale cached/session fallback is disabled.\nSource: codex exec live probe"
+            return codex_bridge.format_status_markdown(status, show_source=True, debug=debug)
+        except Exception as exc:
+            return f"❌ Codex GPT Status error: {exc}"
+
+    @staticmethod
+    def _format_gpts_status_gateway(data) -> str:
+        if not data:
+            return (
+                "🤖 **Codex GPT Status**\n\n"
+                "❌ ไม่พบข้อมูล Codex status แบบ realtime\n"
+                "Source: Codex exec/session bridge\n"
+                "Verify: https://chatgpt.com/codex/cloud/settings/analytics#usage"
+            )
+        return "\n".join([
+            "🤖 **Codex GPT Status**",
+            "",
+            "📊 **Context Usage**",
+            f"   {data.get('context_left_pct', 0)}% remaining ({int(data.get('context_used', 0)):,} / {int(data.get('context_window', 0)):,} tokens)",
+            "",
+            "⏱️ **5h Limit**",
+            f"   Used: {float(data.get('used_5h_pct', 0)):.0f}% ({float(data.get('left_5h_pct', 0)):.0f}% remaining)",
+            f"   Reset: {data.get('reset_5h', 'unknown')}",
+            "",
+            "📅 **7d Limit**",
+            f"   Used: {float(data.get('used_7d_pct', 0)):.0f}% ({float(data.get('left_7d_pct', 0)):.0f}% remaining)",
+            f"   Reset: {data.get('reset_7d', 'unknown')}",
+            "",
+            f"💎 Plan: {str(data.get('plan_type', 'unknown')).upper()}",
+            f"📁 Source: {data.get('source', 'unknown')}",
+            "🔎 Verify: https://chatgpt.com/codex/cloud/settings/analytics#usage",
+        ])
+
+    @staticmethod
+    def _format_gpts_compare_gateway(result) -> str:
+        plan_a = result.get("plan_a", {}) if isinstance(result, dict) else {}
+        plan_b = result.get("plan_b", {}) if isinstance(result, dict) else {}
+        winner = result.get("winner", "N/A") if isinstance(result, dict) else "N/A"
+        speedup = result.get("speedup", "N/A") if isinstance(result, dict) else "N/A"
+        return "\n".join([
+            "🔬 **A/B Test: เปรียบเทียบ Plan A กับ Plan B**",
+            "",
+            "**Plan A (Real-time Direct):**",
+            f"   Status: {'OK' if plan_a.get('success') else 'FAIL'}",
+            f"   Latency: {plan_a.get('latency_ms', 'n/a')} ms",
+            f"📁 Source: {(plan_a.get('data') or {}).get('source', 'unknown')}",
+            "",
+            "**Plan B (File Bridge):**",
+            f"   Status: {'OK' if plan_b.get('success') else 'FAIL'}",
+            f"   Latency: {plan_b.get('latency_ms', 'n/a')} ms",
+            f"📁 Source: {(plan_b.get('data') or {}).get('source', 'unknown')}",
+            "",
+            f"🏆 **Winner:** Plan {winner} ({speedup}x faster)",
+        ])
+
     async def _handle_memory_graph_command(self, event: MessageEvent) -> str:
         """Handle /hermes-memory-graph — open Hermes Memory Graph status/dashboard."""
         from hermes_cli.memory_graph import ensure_memory_graph_ready, format_memory_graph_message
@@ -6803,6 +6877,42 @@ class GatewayRunner:
         except Exception as e:
             logger.warning("[%s] /hermes-memory-graph failed: %s", self.name, e, exc_info=True)
             return f"❌ Failed to open Hermes Memory Graph: {e}"
+
+    async def _handle_workspace_command(self, event: MessageEvent) -> str:
+        """Handle /hermes-workspace — launch/report Workspace UI/API and mobile URLs."""
+        from hermes_cli.workspace_launcher import (
+            format_workspace_launcher_message,
+            parse_workspace_launcher_request,
+            run_workspace_launcher,
+        )
+
+        args = event.get_command_args().strip()
+        request, error = parse_workspace_launcher_request(args)
+        if error or request is None:
+            return error or "Usage: /hermes_workspace [up|status|down|restart]"
+
+        try:
+            result = await asyncio.to_thread(run_workspace_launcher, request)
+            return format_workspace_launcher_message(result)
+        except Exception as e:
+            logger.warning("[%s] /hermes-workspace failed: %s", self.name, e, exc_info=True)
+            return f"❌ Failed to open Hermes Workspace: {e}"
+
+    async def _handle_core_update_impact_gate_command(self, event: MessageEvent) -> str:
+        """Handle /hermes-core-update-impact-gate — compare Hermes OS vs upstream core."""
+        from hermes_cli.core_update_impact_gate import (
+            format_core_update_impact_result,
+            parse_core_update_impact_request,
+            run_core_update_impact_gate,
+        )
+
+        args = event.get_command_args().strip()
+        request, error = parse_core_update_impact_request(args)
+        if error:
+            return error if error.startswith("Usage:") else f"❌ {error}"
+
+        result = run_core_update_impact_gate(request)
+        return format_core_update_impact_result(result)
 
     async def _handle_checkpoint_command(self, event: MessageEvent) -> str:
         """Handle /checkpoint — evaluate the go/no-go checkpoint gate."""
