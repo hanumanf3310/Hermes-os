@@ -12,6 +12,8 @@ Hermes Agent has three layers of resilience that keep your sessions running when
 1. **[Credential pools](./credential-pools.md)** — rotate across multiple API keys for the *same* provider (tried first)
 2. **Primary model fallback** — automatically switches to a *different* provider:model when your main model fails
 3. **Auxiliary task fallback** — independent provider resolution for side tasks like vision, compression, and web extraction
+4. **Gemini CLI fallback** — the `/gemini-cli` command runs Gemini when available, but routes the prompt back into Hermes OS if the Gemini CLI binary is missing or exits with an error
+5. **Gemini research workflow** — `/gemini-research` runs Hermes → Gemini → Hermes verification; if Gemini is unavailable, Hermes answers natively from the evidence instead
 
 Credential pools handle same-provider rotation (e.g., multiple OpenRouter keys). This page covers cross-provider fallback. Both are optional and work independently.
 

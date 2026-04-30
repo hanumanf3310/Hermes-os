@@ -29,9 +29,10 @@ Type `/` in the CLI to open the autocomplete menu. Built-in commands are case-in
 | `/undo` | Remove the last user/assistant exchange |
 | `/title` | Set a title for the current session (usage: /title My Session Name) |
 | `/compress [focus topic]` | Manually compress conversation context (flush memories + summarize). Optional focus topic narrows what the summary preserves. |
+| `/checkpoint --goal <goal> --current <state> --evidence <evidence> [--alternatives <route>]` | Evaluate a go/no-go checkpoint and return `GO`, `HOLD`, or `REDIRECT`. Use this when you need an explicit decision gate before continuing a path. |
 | `/rollback` | List or restore filesystem checkpoints (usage: /rollback [number]) |
 | `/snapshot [create\|restore <id>\|prune]` (alias: `/snap`) | Create or restore state snapshots of Hermes config/state. `create [label]` saves a snapshot, `restore <id>` reverts to it, `prune [N]` removes old snapshots, or list all with no args. |
-| `/stop` | Kill all running background processes |
+
 | `/queue <prompt>` (alias: `/q`) | Queue a prompt for the next turn (doesn't interrupt the current agent response). **Note:** `/q` is claimed by both `/queue` and `/quit`; the last registration wins, so `/q` resolves to `/quit` in practice. Use `/queue` explicitly. |
 | `/resume [name]` | Resume a previously-named session |
 | `/status` | Show session info |

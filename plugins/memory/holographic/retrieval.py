@@ -45,6 +45,27 @@ class FactRetriever:
         self.jaccard_weight = jaccard_weight
         self.hrr_weight = hrr_weight
 
+    def _fact_matches_filters(
+        self,
+        fact: dict,
+        fact_type: str | None = None,
+        fact_star: bool | None = None,
+        fact_plus: bool | None = None,
+        verify_before_use: bool | None = None,
+        verification_status: str | None = None,
+    ) -> bool:
+        if fact_type is not None and fact.get("fact_type") != fact_type:
+            return False
+        if fact_star is not None and bool(fact.get("fact_star")) != fact_star:
+            return False
+        if fact_plus is not None and bool(fact.get("fact_plus")) != fact_plus:
+            return False
+        if verify_before_use is not None and bool(fact.get("verify_before_use")) != verify_before_use:
+            return False
+        if verification_status is not None and fact.get("verification_status") != verification_status:
+            return False
+        return True
+
     def search(
         self,
         query: str,
@@ -116,6 +137,11 @@ class FactRetriever:
         entity: str,
         category: str | None = None,
         limit: int = 10,
+        fact_type: str | None = None,
+        fact_star: bool | None = None,
+        fact_plus: bool | None = None,
+        verify_before_use: bool | None = None,
+        verification_status: str | None = None,
     ) -> list[dict]:
         """Compositional entity query using HRR algebra.
 
@@ -127,7 +153,16 @@ class FactRetriever:
         """
         if not hrr._HAS_NUMPY:
             # Fallback to keyword search on entity name
-            return self.search(entity, category=category, limit=limit)
+            return self.search(
+                entity,
+                category=category,
+                limit=limit,
+                fact_type=fact_type,
+                fact_star=fact_star,
+                fact_plus=fact_plus,
+                verify_before_use=verify_before_use,
+                verification_status=verification_status,
+            )
 
         conn = self.store._conn
 
@@ -160,10 +195,8 @@ class FactRetriever:
 
         rows = conn.execute(
             f"""
-            SELECT fact_id, content, category, tags, trust_score,
-                   retrieval_count, helpful_count, created_at, updated_at,
-                   hrr_vector
-            FROM facts
+            SELECT f.*
+            FROM facts f
             {where}
             """,
             params,
@@ -171,11 +204,29 @@ class FactRetriever:
 
         if not rows:
             # Final fallback: keyword search
-            return self.search(entity, category=category, limit=limit)
+            return self.search(
+                entity,
+                category=category,
+                limit=limit,
+                fact_type=fact_type,
+                fact_star=fact_star,
+                fact_plus=fact_plus,
+                verify_before_use=verify_before_use,
+                verification_status=verification_status,
+            )
 
         scored = []
         for row in rows:
             fact = dict(row)
+            if not self._fact_matches_filters(
+                fact,
+                fact_type=fact_type,
+                fact_star=fact_star,
+                fact_plus=fact_plus,
+                verify_before_use=verify_before_use,
+                verification_status=verification_status,
+            ):
+                continue
             fact_vec = hrr.bytes_to_phases(fact.pop("hrr_vector"))
             # Unbind probe key from fact to see if entity is structurally present
             residual = hrr.unbind(fact_vec, probe_key)
@@ -194,6 +245,11 @@ class FactRetriever:
         entity: str,
         category: str | None = None,
         limit: int = 10,
+        fact_type: str | None = None,
+        fact_star: bool | None = None,
+        fact_plus: bool | None = None,
+        verify_before_use: bool | None = None,
+        verification_status: str | None = None,
     ) -> list[dict]:
         """Discover facts that share structural connections with an entity.
 
@@ -204,7 +260,16 @@ class FactRetriever:
         Falls back to FTS5 search if numpy unavailable.
         """
         if not hrr._HAS_NUMPY:
-            return self.search(entity, category=category, limit=limit)
+            return self.search(
+                entity,
+                category=category,
+                limit=limit,
+                fact_type=fact_type,
+                fact_star=fact_star,
+                fact_plus=fact_plus,
+                verify_before_use=verify_before_use,
+                verification_status=verification_status,
+            )
 
         conn = self.store._conn
 
@@ -220,23 +285,39 @@ class FactRetriever:
 
         rows = conn.execute(
             f"""
-            SELECT fact_id, content, category, tags, trust_score,
-                   retrieval_count, helpful_count, created_at, updated_at,
-                   hrr_vector
-            FROM facts
+            SELECT f.*
+            FROM facts f
             {where}
             """,
             params,
         ).fetchall()
 
         if not rows:
-            return self.search(entity, category=category, limit=limit)
+            return self.search(
+                entity,
+                category=category,
+                limit=limit,
+                fact_type=fact_type,
+                fact_star=fact_star,
+                fact_plus=fact_plus,
+                verify_before_use=verify_before_use,
+                verification_status=verification_status,
+            )
 
         # Score each fact by how much the entity's atom appears in its vector
         # This catches both role-bound entity matches AND content word matches
         scored = []
         for row in rows:
             fact = dict(row)
+            if not self._fact_matches_filters(
+                fact,
+                fact_type=fact_type,
+                fact_star=fact_star,
+                fact_plus=fact_plus,
+                verify_before_use=verify_before_use,
+                verification_status=verification_status,
+            ):
+                continue
             fact_vec = hrr.bytes_to_phases(fact.pop("hrr_vector"))
 
             # Check structural similarity: unbind entity from fact
@@ -262,6 +343,11 @@ class FactRetriever:
         entities: list[str],
         category: str | None = None,
         limit: int = 10,
+        fact_type: str | None = None,
+        fact_star: bool | None = None,
+        fact_plus: bool | None = None,
+        verify_before_use: bool | None = None,
+        verification_status: str | None = None,
     ) -> list[dict]:
         """Multi-entity compositional query — vector-space JOIN.
 
@@ -299,10 +385,8 @@ class FactRetriever:
 
         rows = conn.execute(
             f"""
-            SELECT fact_id, content, category, tags, trust_score,
-                   retrieval_count, helpful_count, created_at, updated_at,
-                   hrr_vector
-            FROM facts
+            SELECT f.*
+            FROM facts f
             {where}
             """,
             params,
@@ -320,6 +404,15 @@ class FactRetriever:
         scored = []
         for row in rows:
             fact = dict(row)
+            if not self._fact_matches_filters(
+                fact,
+                fact_type=fact_type,
+                fact_star=fact_star,
+                fact_plus=fact_plus,
+                verify_before_use=verify_before_use,
+                verification_status=verification_status,
+            ):
+                continue
             fact_vec = hrr.bytes_to_phases(fact.pop("hrr_vector"))
 
             entity_scores = []
@@ -340,6 +433,11 @@ class FactRetriever:
         category: str | None = None,
         threshold: float = 0.3,
         limit: int = 10,
+        fact_type: str | None = None,
+        fact_star: bool | None = None,
+        fact_plus: bool | None = None,
+        verify_before_use: bool | None = None,
+        verification_status: str | None = None,
     ) -> list[dict]:
         """Find potentially contradictory facts via entity overlap + content divergence.
 
@@ -458,10 +556,8 @@ class FactRetriever:
 
         rows = conn.execute(
             f"""
-            SELECT fact_id, content, category, tags, trust_score,
-                   retrieval_count, helpful_count, created_at, updated_at,
-                   hrr_vector
-            FROM facts
+            SELECT f.*
+            FROM facts f
             {where}
             """,
             params,
@@ -470,6 +566,15 @@ class FactRetriever:
         scored = []
         for row in rows:
             fact = dict(row)
+            if not self._fact_matches_filters(
+                fact,
+                fact_type=fact_type,
+                fact_star=fact_star,
+                fact_plus=fact_plus,
+                verify_before_use=verify_before_use,
+                verification_status=verification_status,
+            ):
+                continue
             fact_vec = hrr.bytes_to_phases(fact.pop("hrr_vector"))
             sim = hrr.similarity(target_vec, fact_vec)
             fact["score"] = (sim + 1.0) / 2.0 * fact["trust_score"]
@@ -535,6 +640,15 @@ class FactRetriever:
         results = []
         for row, raw_rank in zip(rows, raw_ranks):
             fact = dict(row)
+            if not self._fact_matches_filters(
+                fact,
+                fact_type=fact_type,
+                fact_star=fact_star,
+                fact_plus=fact_plus,
+                verify_before_use=verify_before_use,
+                verification_status=verification_status,
+            ):
+                continue
             fact.pop("fts_rank_raw", None)
             fact["fts_rank"] = raw_rank / max_rank  # normalize to [0, 1]
             results.append(fact)

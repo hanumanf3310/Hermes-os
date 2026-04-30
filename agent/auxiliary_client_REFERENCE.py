@@ -1,3 +1,4 @@
+# REFERENCE FILE - DO NOT USE - Old chain: OpenRouter Nous Codex Anthropic
 """Shared auxiliary client router for side tasks - Boss Edition v2.0
 
 Provides a single resolution chain for auxiliary tasks using ONLY:

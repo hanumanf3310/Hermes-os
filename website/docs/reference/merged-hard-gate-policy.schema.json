@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hermes.local/schemas/merged-hard-gate-policy.schema.json",
+  "title": "Merged Hard-Gate Policy",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["version", "name", "purpose", "source_of_truth", "owner", "policy_layers", "labels", "enforcement"],
+  "properties": {
+    "version": { "type": "integer", "const": 1 },
+    "name": { "type": "string", "minLength": 1 },
+    "purpose": { "type": "string", "minLength": 1 },
+    "source_of_truth": { "type": "boolean", "const": true },
+    "owner": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["user_label", "assistant_label"],
+      "properties": {
+        "user_label": { "type": "string", "const": "Boss" },
+        "assistant_label": { "type": "string", "const": "น้องเมส" }
+      }
+    },
+    "policy_layers": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["identity", "evidence", "terminal", "memory", "skills", "conflicts", "checkpoints"],
+      "properties": {
+        "identity": { "$ref": "#/$defs/nonEmptyRuleList" },
+        "evidence": { "$ref": "#/$defs/nonEmptyRuleList" },
+        "terminal": { "$ref": "#/$defs/nonEmptyRuleList" },
+        "memory": { "$ref": "#/$defs/nonEmptyRuleList" },
+        "skills": { "$ref": "#/$defs/nonEmptyRuleList" },
+        "conflicts": { "$ref": "#/$defs/nonEmptyRuleList" },
+        "checkpoints": { "$ref": "#/$defs/nonEmptyRuleList" }
+      }
+    },
+    "labels": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["required_for_outputs"],
+      "properties": {
+        "required_for_outputs": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": { "type": "string" },
+          "prefixItems": [
+            { "const": "Verified" },
+            { "const": "Inferred" },
+            { "const": "Blocked" },
+            { "const": "Needs confirmation" }
+          ]
+        }
+      }
+    },
+    "enforcement": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["claims", "terminal", "memory", "skills", "conflicts"],
+      "properties": {
+        "claims": {
+          "type": "object",
+          "required": ["verified_only_when_evidenced"],
+          "properties": { "verified_only_when_evidenced": { "type": "boolean", "const": true } }
+        },
+        "terminal": {
+          "type": "object",
+          "required": ["require_rtk_wrapper"],
+          "properties": { "require_rtk_wrapper": { "type": "boolean", "const": true } }
+        },
+        "memory": {
+          "type": "object",
+          "required": ["require_two_round_confirmation"],
+          "properties": { "require_two_round_confirmation": { "type": "boolean", "const": true } }
+        },
+        "skills": {
+          "type": "object",
+          "required": ["require_reuse_then_patch_before_create", "require_registry_and_category"],
+          "properties": {
+            "require_reuse_then_patch_before_create": { "type": "boolean", "const": true },
+            "require_registry_and_category": { "type": "boolean", "const": true }
+          }
+        },
+        "conflicts": {
+          "type": "object",
+          "required": ["require_stop_explain_confirm"],
+          "properties": { "require_stop_explain_confirm": { "type": "boolean", "const": true } }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "nonEmptyRuleList": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          { "type": "string", "minLength": 1 },
+          { "type": "object", "minProperties": 1, "additionalProperties": true }
+        ]
+      }
+    }
+  }
+}
