@@ -1661,7 +1661,7 @@ class TestDelegateEventEnum(unittest.TestCase):
 
 
 class TestConcurrencyDefaults(unittest.TestCase):
-    """Tests for the concurrency default and no hard ceiling."""
+    """Tests for the concurrency default and limit-error behavior."""
 
     @patch("tools.delegate_tool._load_config", return_value={})
     def test_default_is_three(self, mock_cfg):

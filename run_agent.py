@@ -81,6 +81,7 @@ from tools.browser_tool import cleanup_browser
 
 # Agent internals extracted to agent/ package for modularity
 from agent.memory_manager import build_memory_context_block, sanitize_context
+from agent.context_mode_retrieval import build_context_mode_retrieval_context
 from agent.retry_utils import jittered_backoff
 from agent.error_classifier import classify_api_error, FailoverReason
 from agent.prompt_builder import (
@@ -9518,6 +9519,29 @@ class AIAgent:
                 _plugin_user_context = "\n\n".join(_ctx_parts)
         except Exception as exc:
             logger.warning("pre_llm_call hook failed: %s", exc)
+
+        try:
+            _context_mode_chat_id = getattr(self, "_chat_id", None) or getattr(self, "_user_id", None) or ""
+            try:
+                from gateway.session_context import get_session_env as _get_session_env
+                _context_mode_chat_id = (
+                    _get_session_env("HERMES_SESSION_CHAT_ID")
+                    or _get_session_env("HERMES_SESSION_USER_ID")
+                    or _context_mode_chat_id
+                )
+            except Exception:
+                pass
+            _context_mode_context = build_context_mode_retrieval_context(
+                original_user_message if isinstance(original_user_message, str) else "",
+                platform=getattr(self, "platform", None) or "",
+                chat_id=str(_context_mode_chat_id or ""),
+            )
+            if _context_mode_context:
+                _plugin_user_context = (
+                    (_plugin_user_context + "\n\n") if _plugin_user_context else ""
+                ) + _context_mode_context
+        except Exception as exc:
+            logger.debug("Context Mode retrieval hook failed: %s", exc)
 
         # Main conversation loop
         api_call_count = 0
