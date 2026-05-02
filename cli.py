@@ -23,12 +23,73 @@ import tempfile
 import time
 import uuid
 import textwrap
+import re
 from contextlib import contextmanager
 from pathlib import Path
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
+
+
+_REASONING_TAGS = (
+    "REASONING_SCRATCHPAD",
+    "think",
+    "thinking",
+    "reasoning",
+    "thought",
+)
+
+
+def _strip_reasoning_tags(text: str) -> str:
+    """Remove reasoning/thinking and leaked tool-call XML blocks from displayed text."""
+    cleaned = text or ""
+    for tag in _REASONING_TAGS:
+        cleaned = re.sub(rf"<{tag}>.*?</{tag}>\s*", "", cleaned, flags=re.DOTALL | re.IGNORECASE)
+        cleaned = re.sub(rf"<{tag}>.*$", "", cleaned, flags=re.DOTALL | re.IGNORECASE)
+        cleaned = re.sub(rf"</{tag}>\s*", "", cleaned, flags=re.IGNORECASE)
+    for tc_tag in ("tool_call", "tool_calls", "tool_result", "function_call", "function_calls"):
+        cleaned = re.sub(
+            rf"<{tc_tag}\b[^>]*>.*?</{tc_tag}>\s*",
+            "",
+            cleaned,
+            flags=re.DOTALL | re.IGNORECASE,
+        )
+    cleaned = re.sub(
+        r'(?:(?<=^)|(?<=[\n\r.!?:]))[ \t]*'
+        r'<function\b[^>]*\bname\s*=[^>]*>'
+        r'(?:(?:(?!</function>).)*)</function>\s*',
+        '',
+        cleaned,
+        flags=re.DOTALL | re.IGNORECASE,
+    )
+    cleaned = re.sub(
+        r'</(?:tool_call|tool_calls|tool_result|function_call|function_calls|function)>\s*',
+        '',
+        cleaned,
+        flags=re.IGNORECASE,
+    )
+    return cleaned.strip()
+
+
+def _assistant_content_as_text(content: Any) -> str:
+    if content is None:
+        return ""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = [
+            str(part.get("text", ""))
+            for part in content
+            if isinstance(part, dict) and part.get("type") == "text"
+        ]
+        return "\n".join(p for p in parts if p)
+    return str(content)
+
+
+def _assistant_copy_text(content: Any) -> str:
+    return _strip_reasoning_tags(_assistant_content_as_text(content))
+
 
 # Suppress startup messages for clean CLI experience
 os.environ["HERMES_QUIET"] = "1"  # Our own modules
@@ -1056,6 +1117,42 @@ def _rich_text_from_ansi(text: str) -> _RichText:
     ``[not markup]`` while still interpreting real ANSI color codes.
     """
     return _RichText.from_ansi(text or "")
+
+
+
+
+def _strip_markdown_syntax(text: str) -> str:
+    """Best-effort markdown marker removal for plain-text display."""
+    plain = _rich_text_from_ansi(text or "").plain
+    plain = re.sub(r"^\s{0,3}(?:[-*_]\s*){3,}$", "", plain, flags=re.MULTILINE)
+    plain = re.sub(r"^\s{0,3}#{1,6}\s+", "", plain, flags=re.MULTILINE)
+    plain = re.sub(r"(```+|~~~+)", "", plain)
+    plain = re.sub(r"`([^`]*)`", r"\1", plain)
+    plain = re.sub(r"!\[([^\]]*)\]\([^\)]*\)", r"\1", plain)
+    plain = re.sub(r"\[([^\]]+)\]\([^\)]*\)", r"\1", plain)
+    plain = re.sub(r"\*\*\*([^*]+)\*\*\*", r"\1", plain)
+    plain = re.sub(r"(?<!\w)___([^_]+)___(?!\w)", r"\1", plain)
+    plain = re.sub(r"\*\*([^*]+)\*\*", r"\1", plain)
+    plain = re.sub(r"(?<!\w)__([^_]+)__(?!\w)", r"\1", plain)
+    plain = re.sub(r"\*([^*]+)\*", r"\1", plain)
+    plain = re.sub(r"(?<!\w)_([^_]+)_(?!\w)", r"\1", plain)
+    plain = re.sub(r"~~([^~]+)~~", r"\1", plain)
+    plain = re.sub(r"\n{3,}", "\n\n", plain)
+    return plain.strip("\n")
+
+
+def _render_final_assistant_content(text: str, mode: str = "render"):
+    """Render final assistant content as markdown, stripped text, or raw text."""
+    from rich.markdown import Markdown
+
+    normalized_mode = str(mode or "render").strip().lower()
+    if normalized_mode == "strip":
+        return _RichText(_strip_markdown_syntax(text))
+    if normalized_mode == "raw":
+        return _rich_text_from_ansi(text or "")
+
+    plain = _rich_text_from_ansi(text or "").plain
+    return Markdown(plain)
 
 
 def _cprint(text: str):
@@ -4559,6 +4656,29 @@ class HermesCLI:
         self._restore_modal_input_snapshot()
         self._invalidate(min_interval=0.0)
 
+
+    @staticmethod
+    def _compute_model_picker_viewport(
+        selected: int,
+        scroll_offset: int,
+        n: int,
+        term_rows: int,
+        reserved_below: int = 6,
+        panel_chrome: int = 6,
+        min_visible: int = 3,
+    ) -> tuple[int, int]:
+        """Resolve (scroll_offset, visible) for the /model picker viewport."""
+        max_visible = max(min_visible, term_rows - reserved_below - panel_chrome)
+        if n <= max_visible:
+            return 0, n
+        visible = max_visible
+        if selected < scroll_offset:
+            scroll_offset = selected
+        elif selected >= scroll_offset + visible:
+            scroll_offset = selected - visible + 1
+        scroll_offset = max(0, min(scroll_offset, n - visible))
+        return scroll_offset, visible
+
     def _apply_model_switch_result(self, result, persist_global: bool) -> None:
         if not result.success:
             _cprint(f"  ✗ {result.error_message}")
@@ -5537,8 +5657,12 @@ class HermesCLI:
             self._handle_workspace_command(cmd_original)
         elif canonical == "checkpoint":
             self._handle_checkpoint_command(cmd_original)
+        elif canonical == "hermes-core-update-impact-gate":
+            self._handle_core_update_impact_gate_command(cmd_original)
         elif canonical == "hermes-os":
             self._handle_hermes_os_command(cmd_original)
+        elif canonical == "codegraph":
+            self._handle_codegraph_command(cmd_original)
         elif canonical == "paste":
             self._handle_paste_command()
         elif canonical == "image":
@@ -6069,6 +6193,60 @@ class HermesCLI:
         except Exception as e:
             _cprint(f"  ❌ Failed: {e}")
 
+    def _handle_codegraph_command(self, cmd: str) -> None:
+        """Handle /codegraph [file_key] [--callers|--deps] — Query Hermes code knowledge graph."""
+        import subprocess, shlex
+        from pathlib import Path
+
+        # Strip leading /codegraph and any extra whitespace
+        raw_args = cmd.split(None, 1)[1].strip() if len(cmd.split(None, 1)) > 1 else ""
+        parts = raw_args.split() if raw_args else []
+        file_key = parts[0] if parts else ""
+        flags = parts[1:] if len(parts) > 1 else []
+
+        if not file_key or file_key in ("--callers", "--deps", "-h", "--help"):
+            _cprint("  🔍 Hermes Code Graph")
+            _cprint("  Usage: /codegraph <file_key> [--callers|--deps]")
+            _cprint("  Examples:")
+            _cprint("    /codegraph run_agent.py")
+            _cprint("    /codegraph model_tools.py --callers")
+            _cprint("    /codegraph cli.py --deps")
+            return
+
+        script = Path.home() / ".hermes" / "code-graph" / "query-code-graph.py"
+        if not script.exists():
+            _cprint("  ❌ Code Graph query tool not found.")
+            _cprint(f"     Expected: {script}")
+            _cprint("     Install: hermes skill install hermes-code-graph")
+            return
+
+        cmd_parts = ["python3", str(script), file_key] + flags
+        _cprint(f"  🔍 Querying code graph for: {file_key} {' '.join(flags)}")
+
+        try:
+            result = subprocess.run(
+                cmd_parts,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            output = (result.stdout or result.stderr or "").strip()
+            if result.returncode == 0:
+                for line in output.splitlines()[:60]:
+                    _cprint(f"  {line}")
+                if len(output.splitlines()) > 60:
+                    _cprint(f"  ... ({len(output.splitlines()) - 60} more lines)")
+            else:
+                _cprint(f"  ❌ Error (exit {result.returncode}):")
+                for line in output.splitlines()[:20]:
+                    _cprint(f"    {line}")
+        except FileNotFoundError:
+            _cprint("  ❌ python3 not found in PATH")
+        except subprocess.TimeoutExpired:
+            _cprint("  ⏳ Query timed out after 30s")
+        except Exception as e:
+            _cprint(f"  ❌ Failed: {e}")
+
     def _handle_gemini_cli_command(self, cmd: str) -> None:
         """Run Gemini CLI and fall back to Hermes OS when unavailable."""
         from hermes_cli.gemini_cli import (
@@ -6237,6 +6415,23 @@ class HermesCLI:
         request = parse_checkpoint_request(args)
         result = run_checkpoint_gate(request)
         self.console.print(format_checkpoint_result(result))
+
+    def _handle_core_update_impact_gate_command(self, cmd: str) -> None:
+        """Run the core update impact gate and print the report."""
+        from hermes_cli.core_update_impact_gate import (
+            format_core_update_impact_result,
+            parse_core_update_impact_request,
+            run_core_update_impact_gate,
+        )
+
+        parts = cmd.strip().split(maxsplit=1)
+        args = parts[1].strip() if len(parts) > 1 else ""
+        request, error = parse_core_update_impact_request(args)
+        if error:
+            self.console.print(error if error.startswith("Usage:") else f"❌ {error}")
+            return
+        result = run_core_update_impact_gate(request)
+        self.console.print(format_core_update_impact_result(result))
 
     def _handle_browser_command(self, cmd: str):
         """Handle /browser connect|disconnect|status — manage live Chrome CDP connection."""

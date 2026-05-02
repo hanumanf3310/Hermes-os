@@ -19,7 +19,9 @@ POLICY_FILE_PATHS = [
 def _get_policy_file() -> Optional[Path]:
     """Find the policy file in available locations."""
     for path in POLICY_FILE_PATHS:
-        if path.exists():
+        # Use os.path.exists so tests and policy-gate callers can patch a
+        # single filesystem probe consistently.
+        if os.path.exists(path):
             return path
     return None
 

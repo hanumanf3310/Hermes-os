@@ -145,7 +145,10 @@ def _detect_macos_system_proxy() -> str | None:
     return None
 
 
-def resolve_proxy_url(platform_env_var: str | None = None) -> str | None:
+def resolve_proxy_url(
+    platform_env_var: str | None = None,
+    target_hosts: list[str] | tuple[str, ...] | None = None,
+) -> str | None:
     """Return a proxy URL from env vars, or macOS system proxy.
 
     Check order:
@@ -153,8 +156,13 @@ def resolve_proxy_url(platform_env_var: str | None = None) -> str | None:
       1. HTTPS_PROXY / HTTP_PROXY / ALL_PROXY (and lowercase variants)
       2. macOS system proxy via ``scutil --proxy`` (auto-detect)
 
+    ``target_hosts`` is accepted for platform adapters that pass connection
+    targets for future proxy policy decisions. The current implementation keeps
+    the legacy global proxy behavior and does not need the hosts yet.
+
     Returns *None* if no proxy is found.
     """
+    _ = target_hosts
     if platform_env_var:
         value = (os.environ.get(platform_env_var) or "").strip()
         if value:
@@ -552,9 +560,55 @@ async def cache_audio_from_url(url: str, ext: str = ".ogg", retries: int = 2) ->
 
 
 # ---------------------------------------------------------------------------
+# Video cache utilities
+#
+# Same pattern as image/audio cache -- videos from platforms are downloaded
+# here so the agent can reference them by local file path.
+# ---------------------------------------------------------------------------
+
+VIDEO_CACHE_DIR = get_hermes_dir("cache/videos", "video_cache")
+
+SUPPORTED_VIDEO_TYPES = {
+    ".mp4": "video/mp4",
+    ".mov": "video/quicktime",
+    ".webm": "video/webm",
+    ".mkv": "video/x-matroska",
+    ".avi": "video/x-msvideo",
+    ".m4v": "video/x-m4v",
+}
+
+
+def get_video_cache_dir() -> Path:
+    """Return the video cache directory, creating it if it doesn't exist."""
+    VIDEO_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    return VIDEO_CACHE_DIR
+
+
+def cache_video_from_bytes(data: bytes, ext: str = ".mp4") -> str:
+    """
+    Save raw video bytes to the cache and return the absolute file path.
+
+    Args:
+        data: Raw video bytes.
+        ext:  File extension including the dot (e.g. ".mp4", ".webm").
+
+    Returns:
+        Absolute path to the cached video file as a string.
+    """
+    ext = (ext or ".mp4").lower()
+    if not ext.startswith("."):
+        ext = f".{ext}"
+    cache_dir = get_video_cache_dir()
+    filename = f"video_{uuid.uuid4().hex[:12]}{ext}"
+    filepath = cache_dir / filename
+    filepath.write_bytes(data)
+    return str(filepath)
+
+
+# ---------------------------------------------------------------------------
 # Document cache utilities
 #
-# Same pattern as image/audio cache -- documents from platforms are downloaded
+# Same pattern as image/audio/video cache -- documents from platforms are downloaded
 # here so the agent can reference them by local file path.
 # ---------------------------------------------------------------------------
 
@@ -631,6 +685,38 @@ def cleanup_document_cache(max_age_hours: int = 24) -> int:
     return removed
 
 
+def resolve_channel_prompt(
+    extra: dict[str, Any] | None,
+    channel_id: str | int | None,
+    parent_id: str | int | None = None,
+) -> str | None:
+    """Resolve a per-channel prompt from adapter config.
+
+    The exact channel/topic takes precedence over its parent. This keeps
+    Telegram topics, Discord threads, Slack channels, and Mattermost channels
+    compatible with the shared MessageEvent contract.
+    """
+    if not isinstance(extra, dict):
+        return None
+    prompts = extra.get("channel_prompts")
+    if not isinstance(prompts, dict):
+        return None
+
+    candidates: list[str] = []
+    for value in (channel_id, parent_id):
+        if value is None:
+            continue
+        text = str(value).strip()
+        if text and text not in candidates:
+            candidates.append(text)
+
+    for key in candidates:
+        prompt = prompts.get(key)
+        if isinstance(prompt, str) and prompt.strip():
+            return prompt.strip()
+    return None
+
+
 class MessageType(Enum):
     """Types of incoming messages."""
     TEXT = "text"
@@ -685,6 +771,9 @@ class MessageEvent:
     # Auto-loaded skill(s) for topic/channel bindings (e.g., Telegram DM Topics,
     # Discord channel_skill_bindings).  A single name or ordered list.
     auto_skill: Optional[str | list[str]] = None
+
+    # Optional per-channel/topic prompt resolved by platform adapters.
+    channel_prompt: Optional[str] = None
 
     # Internal flag — set for synthetic events (e.g. background process
     # completion notifications) that must bypass user authorization checks.
@@ -1512,7 +1601,7 @@ class BasePlatformAdapter(ABC):
             # session lifecycle and its cleanup races with the running task
             # (see PR #4926).
             cmd = event.get_command()
-            if cmd in ("approve", "deny", "status", "checkpoint", "stop", "new", "reset", "background", "restart", "hermes-os", "hermes_os", "hermes-memory-graph", "hermes_memory_graph", "hermes-workspace", "hermes_workspace", "workspace", "gemini-cli", "gemini_cli", "gemini-research", "gemini_research"):
+            if cmd in ("approve", "deny", "status", "checkpoint", "stop", "new", "reset", "background", "restart", "hermes-os", "hermes_os", "hermes-memory-graph", "hermes_memory_graph", "hermes-workspace", "hermes_workspace", "workspace", "gemini-cli", "gemini_cli", "gemini-research", "gemini_research", "codegraph", "code_graph", "cg"):
                 logger.debug(
                     "[%s] Command '/%s' bypassing active-session guard for %s",
                     self.name, cmd, session_key,

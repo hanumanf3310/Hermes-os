@@ -373,6 +373,50 @@ def _dequeue_pending_event(adapter, session_key: str) -> MessageEvent | None:
     return adapter.get_pending_message(session_key)
 
 
+
+
+_INTERRUPT_REASON_STOP = "Stop requested"
+_INTERRUPT_REASON_RESET = "Session reset requested"
+_INTERRUPT_REASON_TIMEOUT = "Execution timed out (inactivity)"
+_INTERRUPT_REASON_SSE_DISCONNECT = "SSE client disconnected"
+_INTERRUPT_REASON_GATEWAY_SHUTDOWN = "Gateway shutting down"
+_INTERRUPT_REASON_GATEWAY_RESTART = "Gateway restarting"
+
+_CONTROL_INTERRUPT_MESSAGES = frozenset(
+    {
+        _INTERRUPT_REASON_STOP.lower(),
+        _INTERRUPT_REASON_RESET.lower(),
+        _INTERRUPT_REASON_TIMEOUT.lower(),
+        _INTERRUPT_REASON_SSE_DISCONNECT.lower(),
+        _INTERRUPT_REASON_GATEWAY_SHUTDOWN.lower(),
+        _INTERRUPT_REASON_GATEWAY_RESTART.lower(),
+    }
+)
+
+
+def _is_control_interrupt_message(message: Optional[str]) -> bool:
+    """Return True when an interrupt message is internal control flow."""
+    if not message:
+        return False
+    normalized = " ".join(str(message).strip().split()).lower()
+    return normalized in _CONTROL_INTERRUPT_MESSAGES
+
+
+def _parse_session_key(session_key: str) -> dict | None:
+    """Parse agent:main session keys for background notification routing."""
+    parts = str(session_key or "").split(":")
+    if len(parts) >= 5 and parts[0] == "agent" and parts[1] == "main":
+        result = {
+            "platform": parts[2],
+            "chat_type": parts[3],
+            "chat_id": parts[4],
+        }
+        if len(parts) > 5 and parts[3] in ("dm", "thread"):
+            result["thread_id"] = parts[5]
+        return result
+    return None
+
+
 def _check_unavailable_skill(command_name: str) -> str | None:
     """Check if a command matches a known-but-inactive skill.
 
@@ -2923,8 +2967,14 @@ class GatewayRunner:
         if canonical == "checkpoint":
             return await self._handle_checkpoint_command(event)
 
+        if canonical == "hermes-core-update-impact-gate":
+            return await self._handle_core_update_impact_gate_command(event)
+
         if canonical == "hermes-os":
             return await self._handle_hermes_os_command(event)
+
+        if canonical == "codegraph":
+            return await self._handle_codegraph_command(event)
 
         if canonical == "title":
             return await self._handle_title_command(event)
@@ -3732,6 +3782,7 @@ class GatewayRunner:
                 session_id=session_entry.session_id,
                 session_key=session_key,
                 event_message_id=event.message_id,
+                channel_prompt=getattr(event, "channel_prompt", None),
             )
 
             # Stop persistent typing indicator now that the agent is done
@@ -4924,6 +4975,7 @@ class GatewayRunner:
             message_type=MessageType.TEXT,
             source=source,
             raw_message=event.raw_message,
+            channel_prompt=getattr(event, "channel_prompt", None),
         )
 
         # Let the normal message handler process it
@@ -6766,6 +6818,47 @@ class GatewayRunner:
             logger.warning("[%s] /hermes-os failed: %s", self.name, e, exc_info=True)
             return f"❌ Failed: {e}"
 
+    async def _handle_codegraph_command(self, event: MessageEvent) -> str | None:
+        """Handle /codegraph [file_key] [--callers|--deps] — query Hermes code knowledge graph."""
+        import subprocess
+
+        raw_args = event.get_command_args().strip()
+        if not raw_args:
+            return (
+                "🔍 *Hermes Code Graph*\n\n"
+                "Usage: `/codegraph <file_key> [--callers|--deps]`\n\n"
+                "Examples:\n"
+                "• `/codegraph run_agent.py` — show file info\n"
+                "• `/codegraph model_tools.py --callers` — find callers\n"
+                "• `/codegraph cli.py --deps` — find dependencies\n\n"
+                "File keys: `run_agent.py`, `model_tools.py`, `cli.py`, `gateway/run.py`, etc."
+            )
+
+        parts = raw_args.split()
+        file_key = parts[0]
+        extra_flags = parts[1:] if len(parts) > 1 else []
+
+        query_script = Path.home() / ".hermes" / "code-graph" / "query-code-graph.py"
+        if not query_script.exists():
+            return "❌ Code Graph query tool not found. Is `hermes-code-graph` skill installed?"
+
+        cmd = ["python3", str(query_script), file_key, *extra_flags]
+
+        def _run():
+            return subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+
+        try:
+            result = await asyncio.to_thread(_run)
+            output = (result.stdout or result.stderr or "").strip()
+            if result.returncode == 0:
+                return f"🔍 *Code Graph Result for `{file_key}`*\n\n```\n{output[:3500]}\n```"
+            return f"❌ Code Graph query failed:\n```\n{output[:1500]}\n```"
+        except subprocess.TimeoutExpired:
+            return "⏳ Code Graph query timed out after 30s"
+        except Exception as e:
+            logger.warning("[%s] /codegraph failed: %s", self.name, e, exc_info=True)
+            return f"❌ Failed: {e}"
+
     async def _handle_gemini_cli_command(self, event: MessageEvent) -> str | None:
         """Handle /gemini-cli — run Gemini CLI or fall back to Hermes OS."""
         from hermes_cli.gemini_cli import parse_gemini_cli_request, run_gemini_cli
@@ -6807,7 +6900,8 @@ class GatewayRunner:
             args = event.get_command_args().strip()
             debug = "--debug" in args
             if "--compare" in args:
-                return codex_bridge.format_comparison_markdown(codex_bridge.compare_plans())
+                comparison = await codex_bridge.CodexStatusBridge().compare_plans_async()
+                return codex_bridge.format_comparison_markdown(comparison)
             status = codex_bridge.get_codex_status_via_exec(timeout=60)
             if status is None:
                 return "🤖 **Codex GPT Status**\n\nUnable to retrieve live Codex status.\nStale cached/session fallback is disabled.\nSource: codex exec live probe"
@@ -7546,14 +7640,71 @@ class GatewayRunner:
             return prefix
         return user_text
 
+    def _build_process_event_source(self, evt: dict):
+        """Resolve the canonical source for a synthetic background-process event."""
+        from gateway.session import SessionSource
+
+        evt = evt or {}
+        session_key = str(evt.get("session_key") or "").strip()
+        derived_platform = ""
+        derived_chat_type = ""
+        derived_chat_id = ""
+        derived_thread_id = ""
+
+        if session_key:
+            try:
+                self.session_store._ensure_loaded()
+                entry = self.session_store._entries.get(session_key)
+                if entry and getattr(entry, "origin", None):
+                    return entry.origin
+            except Exception as exc:
+                logger.debug(
+                    "Synthetic process-event session-store lookup failed for %s: %s",
+                    session_key,
+                    exc,
+                )
+            parsed = _parse_session_key(session_key)
+            if parsed:
+                derived_platform = parsed.get("platform", "")
+                derived_chat_type = parsed.get("chat_type", "")
+                derived_chat_id = parsed.get("chat_id", "")
+                derived_thread_id = parsed.get("thread_id", "")
+
+        platform_name = str(evt.get("platform") or derived_platform or "").strip().lower()
+        chat_type = str(evt.get("chat_type") or derived_chat_type or "").strip().lower()
+        chat_id = str(evt.get("chat_id") or derived_chat_id or "").strip()
+        thread_id = str(evt.get("thread_id") or derived_thread_id or "").strip() or None
+        if not platform_name or not chat_type or not chat_id:
+            return None
+        try:
+            platform = Platform(platform_name)
+        except Exception:
+            logger.warning("Synthetic process event has invalid platform metadata: %r", platform_name)
+            return None
+        return SessionSource(
+            platform=platform,
+            chat_id=chat_id,
+            chat_type=chat_type,
+            thread_id=thread_id,
+            user_id=str(evt.get("user_id") or "").strip() or None,
+            user_name=str(evt.get("user_name") or "").strip() or None,
+        )
+
     async def _inject_watch_notification(self, synth_text: str, original_event) -> None:
         """Inject a watch-pattern notification as a synthetic message event.
 
-        Uses the source from the original user event to route the notification
-        back to the correct chat/adapter.
+        Dict events are routed from stored process/session metadata. MessageEvent
+        objects keep the legacy source-based path.
         """
-        source = getattr(original_event, "source", None)
+        if isinstance(original_event, dict):
+            source = self._build_process_event_source(original_event)
+        else:
+            source = getattr(original_event, "source", None)
         if not source:
+            logger.warning(
+                "Dropping watch notification with no routing metadata for process %s",
+                original_event.get("session_id", "unknown") if isinstance(original_event, dict) else "unknown",
+            )
             return
         platform_name = source.platform.value if hasattr(source.platform, "value") else str(source.platform)
         adapter = None
@@ -7571,7 +7722,12 @@ class GatewayRunner:
                 source=source,
                 internal=True,
             )
-            logger.info("Watch pattern notification — injecting for %s", platform_name)
+            logger.info(
+                "Watch pattern notification — injecting for %s chat=%s thread=%s",
+                platform_name,
+                source.chat_id,
+                source.thread_id,
+            )
             await adapter.handle_message(synth_event)
         except Exception as e:
             logger.error("Watch notification injection error: %s", e)
@@ -7806,6 +7962,7 @@ class GatewayRunner:
         session_key: str = None,
         _interrupt_depth: int = 0,
         event_message_id: Optional[str] = None,
+        channel_prompt: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Run the agent with the given message and context.
@@ -8150,6 +8307,8 @@ class GatewayRunner:
 
             # Combine platform context with user-configured ephemeral system prompt
             combined_ephemeral = context_prompt or ""
+            if channel_prompt:
+                combined_ephemeral = (combined_ephemeral + "\n\n" + channel_prompt).strip()
             if self._ephemeral_system_prompt:
                 combined_ephemeral = (combined_ephemeral + "\n\n" + self._ephemeral_system_prompt).strip()
 
@@ -9066,6 +9225,7 @@ class GatewayRunner:
                     if next_message is None:
                         return result
                     next_message_id = getattr(pending_event, "message_id", None)
+                    next_channel_prompt = getattr(pending_event, "channel_prompt", channel_prompt)
 
                 return await self._run_agent(
                     message=next_message,
@@ -9076,6 +9236,7 @@ class GatewayRunner:
                     session_key=session_key,
                     _interrupt_depth=_interrupt_depth + 1,
                     event_message_id=next_message_id,
+                    channel_prompt=next_channel_prompt,
                 )
         finally:
             # Stop progress sender, interrupt monitor, and notification task

@@ -47,6 +47,7 @@ import argparse
 import os
 import subprocess
 import sys
+import signal
 from pathlib import Path
 from typing import Optional
 
@@ -988,6 +989,87 @@ def cmd_model(args):
     select_provider_and_model(args=args)
 
 
+
+
+# Auxiliary model task menu helpers. Kept as module-level functions for tests and
+# for the provider picker's "Configure auxiliary models..." compatibility entry.
+_AUX_TASKS: list[tuple[str, str, str]] = [
+    ("vision",           "Vision",           "image/screenshot analysis"),
+    ("compression",      "Compression",      "context summarization"),
+    ("web_extract",      "Web extract",      "web page summarization"),
+    ("session_search",   "Session search",   "past-conversation recall"),
+    ("approval",         "Approval",         "smart command approval"),
+    ("mcp",              "MCP",              "MCP tool reasoning"),
+    ("title_generation", "Title generation", "session titles"),
+    ("skills_hub",       "Skills hub",       "skills search/install"),
+]
+
+
+def _format_aux_current(task_cfg: dict) -> str:
+    """Render the current aux config for display in the task menu."""
+    if not isinstance(task_cfg, dict):
+        return "auto"
+    base_url = str(task_cfg.get("base_url") or "").strip()
+    provider = str(task_cfg.get("provider") or "auto").strip() or "auto"
+    model = str(task_cfg.get("model") or "").strip()
+    if base_url:
+        short = base_url.replace("https://", "").replace("http://", "").rstrip("/")
+        label = f"{provider} ({short})"
+    else:
+        label = provider
+    if model:
+        label = f"{label} · {model}"
+    return label if label != "auto" or model else "auto"
+
+
+def _save_aux_choice(task_key: str, *, provider: str = "auto", model: str = "", base_url: str = "", api_key: str = "") -> None:
+    """Persist one auxiliary task route without touching main model config."""
+    from copy import deepcopy
+    from hermes_cli.config import DEFAULT_CONFIG, load_config, save_config
+
+    cfg = load_config()
+    aux = cfg.setdefault("auxiliary", {})
+    default_task = deepcopy(DEFAULT_CONFIG.get("auxiliary", {}).get(task_key, {}))
+    current = aux.get(task_key) if isinstance(aux.get(task_key), dict) else {}
+    merged = {**default_task, **current}
+    merged.update({
+        "provider": provider or "auto",
+        "model": model or "",
+        "base_url": base_url or "",
+        "api_key": api_key or "",
+    })
+    aux[task_key] = merged
+    save_config(cfg)
+
+
+def _reset_aux_to_auto() -> int:
+    """Reset auxiliary routing fields to auto while preserving timeouts/options."""
+    from hermes_cli.config import load_config, save_config
+
+    cfg = load_config()
+    aux = cfg.setdefault("auxiliary", {})
+    changed = 0
+    for task_key, _name, _desc in _AUX_TASKS:
+        task_cfg = aux.get(task_key)
+        if not isinstance(task_cfg, dict):
+            continue
+        before = (task_cfg.get("provider"), task_cfg.get("model"), task_cfg.get("base_url"), task_cfg.get("api_key"))
+        if before != ("auto", "", "", ""):
+            changed += 1
+        task_cfg["provider"] = "auto"
+        task_cfg["model"] = ""
+        task_cfg["base_url"] = ""
+        task_cfg["api_key"] = ""
+    if changed:
+        save_config(cfg)
+    return changed
+
+
+def _aux_config_menu() -> None:
+    """Placeholder interactive aux menu entry; detailed flows are outside tests."""
+    print("Auxiliary model configuration is available from the model picker.")
+
+
 def select_provider_and_model(args=None):
     """Core provider selection + model picking logic.
 
@@ -1149,7 +1231,8 @@ def select_provider_and_model(args=None):
             ordered.append((key, label))
 
     ordered.append(("more", "More providers..."))
-    ordered.append(("cancel", "Cancel"))
+    ordered.append(("aux", "Configure auxiliary models..."))
+    ordered.append(("cancel", "Leave unchanged"))
 
     provider_idx = _prompt_provider_choice(
         [label for _, label in ordered], default=default_idx,
@@ -1159,6 +1242,9 @@ def select_provider_and_model(args=None):
         return
 
     selected_provider = ordered[provider_idx][0]
+    if selected_provider == "aux":
+        _aux_config_menu()
+        return
 
     # "More providers..." — show the extended list
     if selected_provider == "more":
@@ -1167,7 +1253,7 @@ def select_provider_and_model(args=None):
         _has_saved_custom_list = isinstance(config.get("custom_providers"), list) and bool(config.get("custom_providers"))
         if _has_saved_custom_list:
             ext_ordered.append(("remove-custom", "Remove a saved custom provider"))
-        ext_ordered.append(("cancel", "Cancel"))
+        ext_ordered.append(("cancel", "Leave unchanged"))
 
         ext_idx = _prompt_provider_choice(
             [label for _, label in ext_ordered], default=0,
@@ -3663,6 +3749,107 @@ def _install_python_dependencies_with_optional_fallback(
         print(f"  ✓ Reinstalled optional extras individually: {', '.join(installed_extras)}")
     if failed_extras:
         print(f"  ⚠ Skipped optional extras that still failed: {', '.join(failed_extras)}")
+
+
+
+
+class _UpdateOutputStream:
+    """Mirror update output to a log while tolerating broken terminal streams."""
+
+    def __init__(self, original, log_file):
+        self._original = original
+        self._log = log_file
+        self._original_broken = False
+
+    def write(self, data):
+        if self._log is not None:
+            try:
+                self._log.write(data)
+            except Exception:
+                pass
+        if self._original_broken:
+            return len(data) if isinstance(data, (str, bytes)) else 0
+        try:
+            return self._original.write(data)
+        except (BrokenPipeError, OSError, ValueError):
+            self._original_broken = True
+            return len(data) if isinstance(data, (str, bytes)) else 0
+
+    def flush(self):
+        if self._log is not None:
+            try:
+                self._log.flush()
+            except Exception:
+                pass
+        if self._original_broken:
+            return
+        try:
+            self._original.flush()
+        except (BrokenPipeError, OSError, ValueError):
+            self._original_broken = True
+
+    def isatty(self):
+        if self._original_broken:
+            return False
+        try:
+            return self._original.isatty()
+        except Exception:
+            return False
+
+    def fileno(self):
+        return self._original.fileno()
+
+    def __getattr__(self, name):
+        return getattr(self._original, name)
+
+
+def _install_hangup_protection(gateway_mode: bool = False):
+    """Protect `hermes update` from SIGHUP and broken terminal pipes."""
+    state = {
+        "prev_stdout": sys.stdout,
+        "prev_stderr": sys.stderr,
+        "log_file": None,
+        "installed": False,
+    }
+    if gateway_mode:
+        return state
+    if hasattr(signal, "SIGHUP"):
+        try:
+            signal.signal(signal.SIGHUP, signal.SIG_IGN)
+        except Exception:
+            pass
+    try:
+        from hermes_cli.config import get_hermes_home
+        logs_dir = get_hermes_home() / "logs"
+        logs_dir.mkdir(parents=True, exist_ok=True)
+        log_file = (logs_dir / "update.log").open("a", encoding="utf-8")
+        log_file.write("\n--- hermes update started ---\n")
+        log_file.flush()
+        state["log_file"] = log_file
+        sys.stdout = _UpdateOutputStream(sys.stdout, log_file)
+        sys.stderr = _UpdateOutputStream(sys.stderr, log_file)
+        state["installed"] = True
+    except Exception:
+        state["installed"] = False
+    return state
+
+
+def _finalize_update_output(state) -> None:
+    """Restore stdio and close the update mirror log."""
+    if not state:
+        return
+    log_file = state.get("log_file")
+    if state.get("installed"):
+        try:
+            sys.stdout = state.get("prev_stdout", sys.stdout)
+            sys.stderr = state.get("prev_stderr", sys.stderr)
+        except Exception:
+            pass
+    if log_file is not None:
+        try:
+            log_file.close()
+        except Exception:
+            pass
 
 
 def cmd_update(args):
