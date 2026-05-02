@@ -1,0 +1,46 @@
+# controlled gateway restart 2026-04-30T11:52:43+07:00
+rollback_live_policy=/home/hanuman3310/.hermes/backups/live-policy-sync-20260430-093832.tar.gz
+rollback_live_protected=/home/hanuman3310/.hermes/backups/live-protected-sync-20260430-094226.tar.gz
+runtime_sync_manifest=/home/hanuman3310/hermes-agent/reports/runtime-sync/live-protected-sync-20260430-094226.json
+## before status
+● hermes-gateway.service - Hermes Agent Gateway - Messaging Platform Integration
+     Loaded: loaded (/home/hanuman3310/.config/systemd/user/hermes-gateway.service; enabled; preset: enabled)
+     Active: active (running) since Thu 2026-04-30 07:42:30 +07; 4h 10min ago
+   Main PID: 1096 (python)
+      Tasks: 24 (limit: 28829)
+     Memory: 617.3M (peak: 4.2G)
+        CPU: 4min 17.869s
+     CGroup: /user.slice/user-1000.slice/user@1000.service/app.slice/hermes-gateway.service
+             ├─1096 /home/hanuman3310/.hermes/hermes-agent/venv/bin/python -m hermes_cli.main gateway run --replace
+             └─1839 node /home/hanuman3310/.hermes/integrations/context-mode/node_modules/.bin/context-mode
+
+Apr 30 07:42:32 LAPTOP-LILQSO2M python[1096]: RuntimeWarning: Enable tracemalloc to get the object allocation traceback
+Apr 30 07:46:38 LAPTOP-LILQSO2M python[1096]: /home/hanuman3310/.hermes/hermes-agent/gateway/run.py:9057: RuntimeWarning: coroutine 'build_channel_directory' was never awaited
+Apr 30 07:46:38 LAPTOP-LILQSO2M python[1096]:   build_channel_directory(adapters)
+Apr 30 07:46:38 LAPTOP-LILQSO2M python[1096]: RuntimeWarning: Enable tracemalloc to get the object allocation traceback
+Apr 30 08:09:33 LAPTOP-LILQSO2M python[1096]: /home/hanuman3310/.hermes/hermes-agent/gateway/run.py:9057: RuntimeWarning: coroutine 'build_channel_directory' was never awaited
+Apr 30 08:09:33 LAPTOP-LILQSO2M python[1096]:   build_channel_directory(adapters)
+Apr 30 08:09:33 LAPTOP-LILQSO2M python[1096]: RuntimeWarning: Enable tracemalloc to get the object allocation traceback
+Apr 30 08:19:49 LAPTOP-LILQSO2M python[1096]: /home/hanuman3310/.hermes/hermes-agent/gateway/run.py:9057: RuntimeWarning: coroutine 'build_channel_directory' was never awaited
+Apr 30 08:19:49 LAPTOP-LILQSO2M python[1096]:   build_channel_directory(adapters)
+Apr 30 08:19:49 LAPTOP-LILQSO2M python[1096]: RuntimeWarning: Enable tracemalloc to get the object allocation traceback
+## restart
+restart_exit=0
+## wait active
+active_after_seconds=1
+## after status
+● hermes-gateway.service - Hermes Agent Gateway - Messaging Platform Integration
+     Loaded: loaded (/home/hanuman3310/.config/systemd/user/hermes-gateway.service; enabled; preset: enabled)
+     Active: active (running) since Thu 2026-04-30 11:52:51 +07; 12ms ago
+   Main PID: 5492 (python)
+      Tasks: 1 (limit: 28829)
+     Memory: 3.2M (peak: 3.5M)
+        CPU: 7ms
+     CGroup: /user.slice/user-1000.slice/user@1000.service/app.slice/hermes-gateway.service
+             └─5492 /home/hanuman3310/.hermes/hermes-agent/venv/bin/python -m hermes_cli.main gateway run --replace
+
+Apr 30 11:52:51 LAPTOP-LILQSO2M systemd[213]: Started hermes-gateway.service - Hermes Agent Gateway - Messaging Platform Integration.
+## hermes os status smoke
+timeout: failed to run command ‘hermes-os’: No such file or directory
+hermes_os_status_exit=127
+RESULT=HERMES_OS_STATUS_FAILED

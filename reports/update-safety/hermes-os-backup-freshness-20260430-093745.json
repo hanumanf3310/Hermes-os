@@ -1,0 +1,362 @@
+{
+  "backup_fresh": false,
+  "backup_root": "/tmp/hermes-backup-freshness-3jz76upq/Hermes-os",
+  "blocking": true,
+  "blocking_reasons": [
+    "backup_missing_tracked_files",
+    "live_runtime_missing_tracked_files",
+    "tracked_file_hash_mismatch"
+  ],
+  "checked_at_bangkok": "2026-04-30T09:37:55+07:00",
+  "dev_checkout": {
+    "branch": "main",
+    "dirty_count": 59,
+    "head": "769720bad2cdfef7824af0436fb2952f598b7de2",
+    "path": "/home/hanuman3310/hermes-agent"
+  },
+  "files": [
+    {
+      "backup_exists": true,
+      "backup_matches_dev": false,
+      "backup_matches_live": false,
+      "backup_sha256": "f04babaed2f68393658bdf3806da7410fe9351c75d585041d599685fa067e89d",
+      "dev_exists": true,
+      "dev_matches_live": false,
+      "dev_sha256": "fe5447d133c49ca2b70317b21bcef39f7b00093b33c2b90dc7eb992ed15fe880",
+      "live_exists": true,
+      "live_sha256": "b6b7380a8de176d47a9b287b16aa80ca03ea951e35eebef4c8c0a0d0ac115ad7",
+      "path": "cli.py"
+    },
+    {
+      "backup_exists": true,
+      "backup_matches_dev": false,
+      "backup_matches_live": false,
+      "backup_sha256": "e7264d7ff213484cabefd19321c5b3f428c29ff1718e7165874e816aa9d407e7",
+      "dev_exists": true,
+      "dev_matches_live": false,
+      "dev_sha256": "b655e2e7d7345e49964662c7dd181b0d2cd7a038e9424257d8e1a5558f202de3",
+      "live_exists": true,
+      "live_sha256": "af3f7f6e009595546f250abc02b0f3805415e3600b3857582013ecc74908f461",
+      "path": "hermes_cli/main.py"
+    },
+    {
+      "backup_exists": true,
+      "backup_matches_dev": false,
+      "backup_matches_live": false,
+      "backup_sha256": "fc6747cdba5311f0e56a30e596a2fe69da00198620634825b24794fd8546b07b",
+      "dev_exists": true,
+      "dev_matches_live": false,
+      "dev_sha256": "aac0ecc92b1082f9f446aede83996f5142c12cf61181e84d4f111130136a95de",
+      "live_exists": true,
+      "live_sha256": "0acfadb3ee056c441be0df67342246f28860b02fd699b6d6e3c1f578ac31724d",
+      "path": "hermes_cli/commands.py"
+    },
+    {
+      "backup_exists": true,
+      "backup_matches_dev": false,
+      "backup_matches_live": false,
+      "backup_sha256": "61c5d38bc478f1697a1998edd2cdaf928c6b46860a7e074ad8440223cb5cf8f1",
+      "dev_exists": true,
+      "dev_matches_live": true,
+      "dev_sha256": "18a2c7aa306cc4aee04a37938dfe0dc46b2d56b75dbc6bc991240a1fad93b854",
+      "live_exists": true,
+      "live_sha256": "18a2c7aa306cc4aee04a37938dfe0dc46b2d56b75dbc6bc991240a1fad93b854",
+      "path": "gateway/run.py"
+    },
+    {
+      "backup_exists": true,
+      "backup_matches_dev": false,
+      "backup_matches_live": false,
+      "backup_sha256": "a1c45eb7ffdfe64d22e52a14ed76bf27f2fe83a861b3b551f597b1bb00e6b0ca",
+      "dev_exists": true,
+      "dev_matches_live": false,
+      "dev_sha256": "47899eb4b240997b68c56e0754e14dc2ed7bac58b841fa44ae0e0e168052a3f6",
+      "live_exists": true,
+      "live_sha256": "d4c792f34c83ea8ce6fb58b2d78150ff2ffd3dda4f7995d8d6e150c76ecfca53",
+      "path": "gateway/platforms/base.py"
+    },
+    {
+      "backup_exists": true,
+      "backup_matches_dev": true,
+      "backup_matches_live": true,
+      "backup_sha256": "50f70d704b969767fd7289652aa7233c2d0f5c883e1ca9f8676e7f2fde0c27aa",
+      "dev_exists": true,
+      "dev_matches_live": true,
+      "dev_sha256": "50f70d704b969767fd7289652aa7233c2d0f5c883e1ca9f8676e7f2fde0c27aa",
+      "live_exists": true,
+      "live_sha256": "50f70d704b969767fd7289652aa7233c2d0f5c883e1ca9f8676e7f2fde0c27aa",
+      "path": "agent/skill_commands.py"
+    },
+    {
+      "backup_exists": true,
+      "backup_matches_dev": true,
+      "backup_matches_live": false,
+      "backup_sha256": "69ddc6e01bc9e8902e06973154560e0bf7b8ad25eeee17f27504ae3177af0ff4",
+      "dev_exists": true,
+      "dev_matches_live": false,
+      "dev_sha256": "69ddc6e01bc9e8902e06973154560e0bf7b8ad25eeee17f27504ae3177af0ff4",
+      "live_exists": true,
+      "live_sha256": "325acebd8aae473406b5496a992b3b6f94ef034fe9cff1de4b43461ee23df3ea",
+      "path": "model_tools.py"
+    },
+    {
+      "backup_exists": true,
+      "backup_matches_dev": true,
+      "backup_matches_live": false,
+      "backup_sha256": "a551c406c3019ba94b801df529fbf99a778a37e0543081873d1abbe406e9d73e",
+      "dev_exists": true,
+      "dev_matches_live": false,
+      "dev_sha256": "a551c406c3019ba94b801df529fbf99a778a37e0543081873d1abbe406e9d73e",
+      "live_exists": true,
+      "live_sha256": "104ddd9fd65061e77d66eb5c10ee8cd170b30d5a8c9b77d9c3efd07092dec83d",
+      "path": "toolsets.py"
+    },
+    {
+      "backup_exists": false,
+      "backup_matches_dev": false,
+      "backup_matches_live": false,
+      "backup_sha256": null,
+      "dev_exists": true,
+      "dev_matches_live": true,
+      "dev_sha256": "6d771e4cda876437cba417b7ce3d1937db40ae47c345d43aa8b6b98b9b6231ca",
+      "live_exists": true,
+      "live_sha256": "6d771e4cda876437cba417b7ce3d1937db40ae47c345d43aa8b6b98b9b6231ca",
+      "path": "hermes_cli/hermes_os_format.py"
+    },
+    {
+      "backup_exists": false,
+      "backup_matches_dev": false,
+      "backup_matches_live": false,
+      "backup_sha256": null,
+      "dev_exists": true,
+      "dev_matches_live": false,
+      "dev_sha256": "fc971d202272d9b01092b85d66f92a9a20c510f856158c6a1f4e6d83b303d8c7",
+      "live_exists": false,
+      "live_sha256": null,
+      "path": "website/docs/reference/merged-hard-gate-policy.yaml"
+    },
+    {
+      "backup_exists": false,
+      "backup_matches_dev": false,
+      "backup_matches_live": false,
+      "backup_sha256": null,
+      "dev_exists": true,
+      "dev_matches_live": false,
+      "dev_sha256": "9c613cd81840c04ea650fda75980749f6166c444792ab518da35ab8a3eb10644",
+      "live_exists": false,
+      "live_sha256": null,
+      "path": "website/docs/reference/merged-hard-gate-policy.schema.json"
+    },
+    {
+      "backup_exists": false,
+      "backup_matches_dev": false,
+      "backup_matches_live": false,
+      "backup_sha256": null,
+      "dev_exists": true,
+      "dev_matches_live": false,
+      "dev_sha256": "103a2d8e2709aae2e1fe3fbdba395dd56fd1cf62930a948b711de184d02df203",
+      "live_exists": false,
+      "live_sha256": null,
+      "path": "website/docs/reference/merged-hard-gate-policy-card.md"
+    },
+    {
+      "backup_exists": false,
+      "backup_matches_dev": false,
+      "backup_matches_live": false,
+      "backup_sha256": null,
+      "dev_exists": true,
+      "dev_matches_live": false,
+      "dev_sha256": "6f61c1c60b2181db48e4ca15700c7214f524f00ee413321f6c28fb7ea4f1fa41",
+      "live_exists": false,
+      "live_sha256": null,
+      "path": "tools/merged_policy_validator.py"
+    }
+  ],
+  "hash_mismatches": [
+    {
+      "backup_vs": "dev",
+      "path": "cli.py"
+    },
+    {
+      "backup_vs": "live_runtime",
+      "path": "cli.py"
+    },
+    {
+      "backup_vs": "dev",
+      "path": "hermes_cli/main.py"
+    },
+    {
+      "backup_vs": "live_runtime",
+      "path": "hermes_cli/main.py"
+    },
+    {
+      "backup_vs": "dev",
+      "path": "hermes_cli/commands.py"
+    },
+    {
+      "backup_vs": "live_runtime",
+      "path": "hermes_cli/commands.py"
+    },
+    {
+      "backup_vs": "dev",
+      "path": "gateway/run.py"
+    },
+    {
+      "backup_vs": "live_runtime",
+      "path": "gateway/run.py"
+    },
+    {
+      "backup_vs": "dev",
+      "path": "gateway/platforms/base.py"
+    },
+    {
+      "backup_vs": "live_runtime",
+      "path": "gateway/platforms/base.py"
+    },
+    {
+      "backup_vs": "live_runtime",
+      "path": "model_tools.py"
+    },
+    {
+      "backup_vs": "live_runtime",
+      "path": "toolsets.py"
+    }
+  ],
+  "live_runtime": {
+    "branch": "boss/restore-gpts-model-20260425",
+    "dirty_count": 21,
+    "head": "8b81e04c965075d6abd58a497c81b8e2c6e025b5",
+    "path": "/home/hanuman3310/.hermes/hermes-agent"
+  },
+  "manifest": {
+    "branch_mode": "main",
+    "excluded": [
+      ".env / secrets / tokens",
+      "logs",
+      "sessions",
+      "__pycache__",
+      "node_modules",
+      "target",
+      "dist/build artifacts",
+      "runtime caches",
+      "GitUpload tool folder"
+    ],
+    "included": {
+      "bin": [
+        "hermes-os",
+        "hermes-off",
+        "hermes-status",
+        "hermes-workspace",
+        "hermes-memory-graph",
+        "hermes-fact-validate",
+        "hermes-fact-migrate",
+        "preupdate-hermes",
+        "preupdate-hermes-json",
+        "preupdate-hermes-summary"
+      ],
+      "skills": [
+        "autonomous-ai-agents/delegate-to-opencode",
+        "autonomous-ai-agents/enterprise-agent-fleet-phased-integration",
+        "autonomous-ai-agents/omx-coding-agent",
+        "autonomous-ai-agents/opencode",
+        "codex/codex-gpt-status",
+        "devops/codex-realtime-status-bridge",
+        "devops/dashboard-html-safe-update",
+        "devops/dashboard-working-path-map",
+        "devops/enterprise-agent-fleet-rtk-integration",
+        "devops/hermes-workspace-launcher",
+        "devops/thclaws-reference-adapter",
+        "disabled/gemini-cli",
+        "hermes-os-integration",
+        "hermes-os-phase3-readiness-gate",
+        "hermes-os/auto-memory-audit-cron",
+        "hermes-os/external-agent-skill-radar",
+        "hermes-os/fact-store-factstar-governance",
+        "hermes-os/hermes-learning-manual-ingest-workflow",
+        "hermes-os/hermes-os-communication-protocol",
+        "hermes-os/hermes-os-communication-protocol-v2",
+        "hermes-os/hermes-os-communication-protocol-v2-5",
+        "hermes-os/hermes-os-memory-system-integration",
+        "hermes-os/hermes-restore-recall-workflow",
+        "hermes-os/hermes-session-manager",
+        "productivity/google-workspace",
+        "shared-memory-across-platforms",
+        "software-development/codex-gpt-status-bridge",
+        "software-development/codex-gpts-realtime-session-debugging",
+        "software-development/codex-status-bridge-realtime",
+        "software-development/gemini-cli-hermes-fallback",
+        "software-development/knowledge-skill-fact-memory-integration",
+        "software-development/phase10-knowledge-integration",
+        "software-development/slash-command-workflow-integration",
+        "software-development/model-config-evidence-gate",
+        "software-development/openai-compatible-endpoint-smoke-testing",
+        "software-development/qualified-skill-fallback-hardening",
+        "software-development/standalone-command-mode-surface",
+        "software-development/systematic-debugging",
+        "software-development/test-driven-development",
+        "software-development/requesting-code-review",
+        "software-development/skills-lifecycle-cli-ops",
+        "software-development/enterprise-testing-framework",
+        "software-development/phase11-registry-governance-hardening",
+        "software-development/hermes-agent-upstream-update-impact-audit",
+        "software-development/hermes-upstream-update-auditor-phase1",
+        "software-development/writing-plans",
+        "software-development/plan",
+        "software-development/subagent-driven-development",
+        "software-development/delegate-task-templates",
+        "software-development/execution-backend-candidate-evaluation",
+        "software-development/legacy-string-cleanup-outside-repo"
+      ],
+      "sources/hermes-agent": "full working tree, runtime/build noise excluded",
+      "sources/hermes-workspace": "full working tree, runtime/build noise excluded",
+      "thclaws": [
+        "bin/thclaws-safe",
+        "bin/thclaws-update-gate",
+        "releases/thclaws-c69986b-20260426",
+        "settings.json"
+      ]
+    },
+    "repo_url": "https://github.com/hanumanf3310/Hermes-os.git"
+  },
+  "manifest_present": true,
+  "missing_from_backup": [
+    "hermes_cli/hermes_os_format.py",
+    "website/docs/reference/merged-hard-gate-policy.yaml",
+    "website/docs/reference/merged-hard-gate-policy.schema.json",
+    "website/docs/reference/merged-hard-gate-policy-card.md",
+    "tools/merged_policy_validator.py"
+  ],
+  "missing_from_dev": [],
+  "missing_from_live_runtime": [
+    "website/docs/reference/merged-hard-gate-policy.yaml",
+    "website/docs/reference/merged-hard-gate-policy.schema.json",
+    "website/docs/reference/merged-hard-gate-policy-card.md",
+    "tools/merged_policy_validator.py"
+  ],
+  "repo": {
+    "branch": "main",
+    "clone_ok": true,
+    "clone_stderr": "Cloning into '/tmp/hermes-backup-freshness-3jz76upq/Hermes-os'...",
+    "clone_stdout": "",
+    "dirty_count": 0,
+    "head": "84019c0a6b134e3e9eea9a728c16e682bfec1100",
+    "repo_url": "https://github.com/hanumanf3310/Hermes-os.git"
+  },
+  "risk": "HIGH",
+  "schema_version": 1,
+  "tracked_files": [
+    "cli.py",
+    "hermes_cli/main.py",
+    "hermes_cli/commands.py",
+    "gateway/run.py",
+    "gateway/platforms/base.py",
+    "agent/skill_commands.py",
+    "model_tools.py",
+    "toolsets.py",
+    "hermes_cli/hermes_os_format.py",
+    "website/docs/reference/merged-hard-gate-policy.yaml",
+    "website/docs/reference/merged-hard-gate-policy.schema.json",
+    "website/docs/reference/merged-hard-gate-policy-card.md",
+    "tools/merged_policy_validator.py"
+  ]
+}

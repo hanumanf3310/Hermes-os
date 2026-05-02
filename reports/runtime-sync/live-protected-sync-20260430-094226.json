@@ -1,0 +1,49 @@
+{
+  "backup": "/home/hanuman3310/.hermes/backups/live-protected-sync-20260430-094226.tar.gz",
+  "files": [
+    {
+      "after_sha256": "fe5447d133c49ca2b70317b21bcef39f7b00093b33c2b90dc7eb992ed15fe880",
+      "before_sha256": "b6b7380a8de176d47a9b287b16aa80ca03ea951e35eebef4c8c0a0d0ac115ad7",
+      "path": "cli.py",
+      "source_sha256": "fe5447d133c49ca2b70317b21bcef39f7b00093b33c2b90dc7eb992ed15fe880",
+      "synced": true
+    },
+    {
+      "after_sha256": "b655e2e7d7345e49964662c7dd181b0d2cd7a038e9424257d8e1a5558f202de3",
+      "before_sha256": "af3f7f6e009595546f250abc02b0f3805415e3600b3857582013ecc74908f461",
+      "path": "hermes_cli/main.py",
+      "source_sha256": "b655e2e7d7345e49964662c7dd181b0d2cd7a038e9424257d8e1a5558f202de3",
+      "synced": true
+    },
+    {
+      "after_sha256": "aac0ecc92b1082f9f446aede83996f5142c12cf61181e84d4f111130136a95de",
+      "before_sha256": "0acfadb3ee056c441be0df67342246f28860b02fd699b6d6e3c1f578ac31724d",
+      "path": "hermes_cli/commands.py",
+      "source_sha256": "aac0ecc92b1082f9f446aede83996f5142c12cf61181e84d4f111130136a95de",
+      "synced": true
+    },
+    {
+      "after_sha256": "47899eb4b240997b68c56e0754e14dc2ed7bac58b841fa44ae0e0e168052a3f6",
+      "before_sha256": "d4c792f34c83ea8ce6fb58b2d78150ff2ffd3dda4f7995d8d6e150c76ecfca53",
+      "path": "gateway/platforms/base.py",
+      "source_sha256": "47899eb4b240997b68c56e0754e14dc2ed7bac58b841fa44ae0e0e168052a3f6",
+      "synced": true
+    },
+    {
+      "after_sha256": "69ddc6e01bc9e8902e06973154560e0bf7b8ad25eeee17f27504ae3177af0ff4",
+      "before_sha256": "325acebd8aae473406b5496a992b3b6f94ef034fe9cff1de4b43461ee23df3ea",
+      "path": "model_tools.py",
+      "source_sha256": "69ddc6e01bc9e8902e06973154560e0bf7b8ad25eeee17f27504ae3177af0ff4",
+      "synced": true
+    },
+    {
+      "after_sha256": "a551c406c3019ba94b801df529fbf99a778a37e0543081873d1abbe406e9d73e",
+      "before_sha256": "104ddd9fd65061e77d66eb5c10ee8cd170b30d5a8c9b77d9c3efd07092dec83d",
+      "path": "toolsets.py",
+      "source_sha256": "a551c406c3019ba94b801df529fbf99a778a37e0543081873d1abbe406e9d73e",
+      "synced": true
+    }
+  ],
+  "source": "/home/hanuman3310/hermes-agent",
+  "target": "/home/hanuman3310/.hermes/hermes-agent"
+}
