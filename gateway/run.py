@@ -373,50 +373,6 @@ def _dequeue_pending_event(adapter, session_key: str) -> MessageEvent | None:
     return adapter.get_pending_message(session_key)
 
 
-
-
-_INTERRUPT_REASON_STOP = "Stop requested"
-_INTERRUPT_REASON_RESET = "Session reset requested"
-_INTERRUPT_REASON_TIMEOUT = "Execution timed out (inactivity)"
-_INTERRUPT_REASON_SSE_DISCONNECT = "SSE client disconnected"
-_INTERRUPT_REASON_GATEWAY_SHUTDOWN = "Gateway shutting down"
-_INTERRUPT_REASON_GATEWAY_RESTART = "Gateway restarting"
-
-_CONTROL_INTERRUPT_MESSAGES = frozenset(
-    {
-        _INTERRUPT_REASON_STOP.lower(),
-        _INTERRUPT_REASON_RESET.lower(),
-        _INTERRUPT_REASON_TIMEOUT.lower(),
-        _INTERRUPT_REASON_SSE_DISCONNECT.lower(),
-        _INTERRUPT_REASON_GATEWAY_SHUTDOWN.lower(),
-        _INTERRUPT_REASON_GATEWAY_RESTART.lower(),
-    }
-)
-
-
-def _is_control_interrupt_message(message: Optional[str]) -> bool:
-    """Return True when an interrupt message is internal control flow."""
-    if not message:
-        return False
-    normalized = " ".join(str(message).strip().split()).lower()
-    return normalized in _CONTROL_INTERRUPT_MESSAGES
-
-
-def _parse_session_key(session_key: str) -> dict | None:
-    """Parse agent:main session keys for background notification routing."""
-    parts = str(session_key or "").split(":")
-    if len(parts) >= 5 and parts[0] == "agent" and parts[1] == "main":
-        result = {
-            "platform": parts[2],
-            "chat_type": parts[3],
-            "chat_id": parts[4],
-        }
-        if len(parts) > 5 and parts[3] in ("dm", "thread"):
-            result["thread_id"] = parts[5]
-        return result
-    return None
-
-
 def _check_unavailable_skill(command_name: str) -> str | None:
     """Check if a command matches a known-but-inactive skill.
 
