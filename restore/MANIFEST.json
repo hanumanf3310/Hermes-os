@@ -1,9 +1,10 @@
 {
+  "generated_at_bangkok": "2026-05-02T19:58:50.706445+07:00",
   "repo_url": "https://github.com/hanumanf3310/Hermes-os.git",
-  "branch_mode": "main",
+  "snapshot_kind": "restore-ready Hermes OS checkpoint before risky test/venv work",
   "included": {
-    "sources/hermes-agent": "full working tree, runtime/build noise excluded",
-    "sources/hermes-workspace": "full working tree, runtime/build noise excluded",
+    "sources/hermes-agent": "dev checkout plus live runtime overlays for restore-critical Gateway/policy/status files; runtime/build noise excluded",
+    "sources/hermes-workspace": "workspace snapshot including memory graph dashboard; runtime/build noise excluded",
     "bin": [
       "hermes-os",
       "hermes-off",
@@ -14,77 +15,57 @@
       "hermes-fact-migrate",
       "preupdate-hermes",
       "preupdate-hermes-json",
-      "preupdate-hermes-summary"
+      "preupdate-hermes-summary",
+      "hermes"
     ],
-    "skills": [
-      "autonomous-ai-agents/delegate-to-opencode",
-      "autonomous-ai-agents/enterprise-agent-fleet-phased-integration",
-      "autonomous-ai-agents/omx-coding-agent",
-      "autonomous-ai-agents/opencode",
-      "codex/codex-gpt-status",
-      "devops/codex-realtime-status-bridge",
-      "devops/dashboard-html-safe-update",
-      "devops/dashboard-working-path-map",
-      "devops/enterprise-agent-fleet-rtk-integration",
-      "devops/hermes-workspace-launcher",
-      "devops/thclaws-reference-adapter",
-      "disabled/gemini-cli",
-      "hermes-os-integration",
-      "hermes-os-phase3-readiness-gate",
-      "hermes-os/auto-memory-audit-cron",
-      "hermes-os/external-agent-skill-radar",
-      "hermes-os/fact-store-factstar-governance",
-      "hermes-os/hermes-learning-manual-ingest-workflow",
-      "hermes-os/hermes-os-communication-protocol",
-      "hermes-os/hermes-os-communication-protocol-v2",
-      "hermes-os/hermes-os-communication-protocol-v2-5",
-      "hermes-os/hermes-os-memory-system-integration",
-      "hermes-os/hermes-restore-recall-workflow",
-      "hermes-os/hermes-session-manager",
-      "productivity/google-workspace",
-      "shared-memory-across-platforms",
-      "software-development/codex-gpt-status-bridge",
-      "software-development/codex-gpts-realtime-session-debugging",
-      "software-development/codex-status-bridge-realtime",
-      "software-development/gemini-cli-hermes-fallback",
-      "software-development/knowledge-skill-fact-memory-integration",
-      "software-development/phase10-knowledge-integration",
-      "software-development/slash-command-workflow-integration",
-      "software-development/model-config-evidence-gate",
-      "software-development/openai-compatible-endpoint-smoke-testing",
-      "software-development/qualified-skill-fallback-hardening",
-      "software-development/standalone-command-mode-surface",
-      "software-development/systematic-debugging",
-      "software-development/test-driven-development",
-      "software-development/requesting-code-review",
-      "software-development/skills-lifecycle-cli-ops",
-      "software-development/enterprise-testing-framework",
-      "software-development/phase11-registry-governance-hardening",
-      "software-development/hermes-agent-upstream-update-impact-audit",
-      "software-development/hermes-upstream-update-auditor-phase1",
-      "software-development/writing-plans",
-      "software-development/plan",
-      "software-development/subagent-driven-development",
-      "software-development/delegate-task-templates",
-      "software-development/execution-backend-candidate-evaluation",
-      "software-development/legacy-string-cleanup-outside-repo"
-    ],
-    "thclaws": [
-      "bin/thclaws-safe",
-      "bin/thclaws-update-gate",
-      "releases/thclaws-c69986b-20260426",
-      "settings.json"
-    ]
+    "skills": {
+      "selected_restore_skills": [
+        "hermes-os/hermes-os",
+        "hermes-os/hermes-os-blueprint",
+        "hermes-os/hermes-os-communication-protocol-v2-5",
+        "rtk-mes",
+        "software-development/hermes-os-github-backup-snapshot",
+        "software-development/systematic-debugging",
+        "software-development/requesting-code-review",
+        "devops/dashboard-html-safe-update",
+        "devops/dashboard-working-path-map",
+        "note-taking/fact-store-evidence-reporting",
+        "hermes-code-graph/hermes-code-graph"
+      ],
+      "note": "Narrow selected skill snapshot only; broad skill dump excluded to avoid secrets/noise."
+    }
   },
+  "restore_critical_files": [
+    "sources/hermes-agent/hermes_cli/commands.py",
+    "sources/hermes-agent/cli.py",
+    "sources/hermes-agent/gateway/run.py",
+    "sources/hermes-agent/gateway/platforms/base.py",
+    "sources/hermes-agent/hermes_cli/hermes_os_format.py",
+    "sources/hermes-agent/website/docs/reference/merged-hard-gate-policy.yaml",
+    "sources/hermes-agent/website/docs/reference/merged-hard-gate-policy.schema.json",
+    "sources/hermes-agent/tools/merged_policy_validator.py",
+    "sources/hermes-workspace/memory-graph/dashboard.html"
+  ],
   "excluded": [
+    "Repo.env",
     ".env / secrets / tokens",
     "logs",
     "sessions",
     "__pycache__",
     "node_modules",
+    "venv/.venv",
     "target",
     "dist/build artifacts",
     "runtime caches",
-    "GitUpload tool folder"
-  ]
+    "reports/update-safety artifacts over GitHub size limit",
+    "large archives (*.tar.gz)",
+    "broad skill cache/index dump",
+    "skills with embedded credentials/examples not required for Hermes OS restore"
+  ],
+  "policy_sha256": "fc971d202272d9b01092b85d66f92a9a20c510f856158c6a1f4e6d83b303d8c7",
+  "gateway_contract_files": [
+    "sources/hermes-agent/gateway/platforms/base.py",
+    "sources/hermes-agent/gateway/run.py"
+  ],
+  "test_caveat": "Full pytest intentionally skipped for this checkpoint because Boss asked to avoid risky items 3 and 4; prior wrapper caveat: live venv lacks pip."
 }

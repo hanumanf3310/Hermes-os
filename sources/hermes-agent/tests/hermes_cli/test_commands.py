@@ -88,6 +88,13 @@ class TestCommandRegistry:
         assert "Hermes → Gemini → Hermes" in cmd.description
         assert "gemini-research" in GATEWAY_KNOWN_COMMANDS
 
+    def test_checkpoint_command_is_registered(self):
+        cmd = resolve_command("checkpoint")
+        assert cmd is not None
+        assert cmd.name == "checkpoint"
+        assert "GO, HOLD, or REDIRECT" in cmd.description
+        assert "checkpoint" in GATEWAY_KNOWN_COMMANDS
+
     def test_telegram_menu_exposes_memory_graph_command(self):
         names = {name for name, _ in telegram_bot_commands()}
         assert "hermes_memory_graph" in names

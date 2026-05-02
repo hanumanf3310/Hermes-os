@@ -1,0 +1,19 @@
+#!/home/hanuman3310/.hermes/hermes-agent/venv/bin/python3
+# -*- coding: utf-8 -*-
+import subprocess
+import sys
+from hermes_cli.main import main
+
+
+def _maybe_forward_hermes_os_alias(argv):
+    if len(argv) >= 2 and argv[1].lower() == "os":
+        raise SystemExit(subprocess.call(["hermes-os"] + argv[2:]))
+
+
+if __name__ == "__main__":
+    if sys.argv[0].endswith("-script.pyw"):
+        sys.argv[0] = sys.argv[0][:-11]
+    elif sys.argv[0].endswith(".exe"):
+        sys.argv[0] = sys.argv[0][:-4]
+    _maybe_forward_hermes_os_alias(sys.argv)
+    sys.exit(main())

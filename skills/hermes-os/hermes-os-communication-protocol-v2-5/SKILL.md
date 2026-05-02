@@ -34,6 +34,8 @@ date: 2025-04-26
 # Hermes OS Communication Protocol v2.5
 ## Tiny Trade Protocol
 
+Use this protocol for every Hermes work session in CLI and Telegram.
+
 **Status:** ✅ OFFICIAL STANDARD (Replaces v2.0)  
 **Core Philosophy:** "ยอมเสีย token เล็กน้อย กัน risk timeout"  
 **Core Philosophy:** "ยอมเสีย token เล็กน้อย กัน risk timeout"  
@@ -57,6 +59,45 @@ date: 2025-04-26
 - Claude Code: Use `--max-turns` and `--max-budget-usd` for control
 
 **Solution:** Proactively split tasks and show progress, trading small token cost for guaranteed completion visibility
+
+---
+
+## 🧭 Governance Gate Before Any Skill / Protocol-Sensitive Action
+
+When the task touches any of these:
+- skill creation or skill updates
+- registry / catalog / lifecycle operations
+- Hermes OS protocol behavior
+- dashboard governance nodes or read-only policy
+- Fact* / Fact+* / no-fake-data policy
+
+then Tiny Trade must be used as a *governance gate*, not just as a timeout guard.
+
+### Mandatory pre-action checks
+1. Inspect the skill registry for an existing reusable skill.
+2. Read the matching skill before creating a new one.
+3. Prefer patch/reuse over new skill creation.
+4. Confirm dashboard or runtime evidence if the task claims system behavior.
+5. Do not declare success from memory when the system exposes traceable output.
+6. If the system already has a read-only / no-fake-data contract, do not add write actions unless explicitly requested.
+
+### Skill creation rule
+- Do **not** create a new skill if an existing one covers the behavior.
+- If a new skill is justified, it must be categorized, registered, and discoverable.
+- Registry entry, description, and tests must exist before calling it done.
+
+### Evidence rule
+- Prefer dashboard / registry / test output over narrative claims.
+- When a node or policy exists in the dashboard, treat it as a checkable contract.
+- If the output is small but traceable, use it to prove compliance immediately.
+
+This gate exists to prevent exactly the failure mode where the assistant invents new workflows while ignoring the system already in place.
+
+### Checkpoint / go-no-go contract
+- Use `/checkpoint` as the explicit decision gate when the work risks looping, lacks fresh evidence, or needs a clean go/no-go call.
+- Keep `/checkpoint` separate from filesystem `/rollback`; rollback restores files, checkpoint decides whether the path itself should continue.
+- If the checkpoint result is `HOLD` or `REDIRECT`, stop the current path and gather evidence or switch route before doing more work.
+- When exposing `/checkpoint` in docs/help, keep CLI, gateway, and user-guide wording aligned with the runtime behavior.
 
 **Cost-Benefit Analysis:**
 

@@ -9,7 +9,6 @@ Repo.env
 *.bak
 *.swp
 *.swo
-
 # Python / node / build noise
 __pycache__/
 *.py[cod]
@@ -22,10 +21,12 @@ target/
 dist/
 build/
 coverage/
-
 # OS/editor noise
 .DS_Store
 Thumbs.db
 desktop.ini
 .vscode/
 .idea/
+.envrc
+reports/
+*.tar.gz

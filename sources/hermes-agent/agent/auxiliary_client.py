@@ -91,7 +91,7 @@ _DEPRECATED_MODELS = frozenset({
 def _normalize_aux_provider(provider: Optional[str]) -> str:
     """Normalize provider name to approved list only."""
     normalized = (provider or "auto").strip().lower()
-    
+
     # Check for deprecated providers - warn and redirect to approved
     if normalized in _DEPRECATED_PROVIDERS:
         logger.warning(
@@ -100,17 +100,17 @@ def _normalize_aux_provider(provider: Optional[str]) -> str:
             normalized
         )
         return "auto"  # Will use approved fallback chain
-    
+
     if normalized.startswith("custom:"):
         suffix = normalized.split(":", 1)[1].strip()
         if not suffix:
             return "ollama"  # Default to primary
         normalized = suffix
-    
+
     if normalized == "main":
         # Resolve to ollama per Boss policy
         return "ollama"
-    
+
     return _PROVIDER_ALIASES.get(normalized, normalized if normalized in _PROVIDER_ALIASES else "auto")
 
 
@@ -140,7 +140,7 @@ def _get_ollama_client() -> Optional[Tuple[OpenAI, str]]:
         except Exception as e:
             logger.debug("Ollama health check warning (will retry): %s", e)
             # Don't fail here - let the actual API call determine success
-        
+
         # Create client with Ollama base URL
         client = OpenAI(
             base_url=_OLLAMA_BASE_URL,
@@ -149,20 +149,20 @@ def _get_ollama_client() -> Optional[Tuple[OpenAI, str]]:
         )
         logger.debug("Auxiliary client: Ollama (kimi-k2.5:cloud)")
         return client, _OLLAMA_MODEL
-        
+
     except Exception as e:
         logger.debug("Ollama client creation failed: %s", e)
         return None
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# OpenCode Fallback Configuration  
+# OpenCode Fallback Configuration
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def _get_opencode_client(model: str = "gpt-5.4-mini") -> Optional[Tuple[OpenAI, str]]:
     """Get OpenCode client for fallback models."""
     api_key = os.getenv(_OPENCODE_API_KEY_ENV)
-    
+
     # Try to get from credential pool if env not set
     if not api_key:
         try:
@@ -171,11 +171,11 @@ def _get_opencode_client(model: str = "gpt-5.4-mini") -> Optional[Tuple[OpenAI, 
                 api_key = _pool_runtime_api_key(entry)
         except Exception:
             pass
-    
+
     if not api_key:
         logger.debug("OpenCode API key not found in env or credential pool")
         return None
-    
+
     try:
         client = OpenAI(
             base_url=_OPENCODE_BASE_URL,
@@ -184,7 +184,7 @@ def _get_opencode_client(model: str = "gpt-5.4-mini") -> Optional[Tuple[OpenAI, 
         )
         logger.debug("Auxiliary client: OpenCode (%s)", model)
         return client, model
-        
+
     except Exception as e:
         logger.debug("OpenCode client creation failed: %s", e)
         return None
@@ -194,16 +194,16 @@ def _try_opencode_with_fallback() -> Optional[Tuple[OpenAI, str]]:
     """Try OpenCode models in fallback order."""
     models = [
         "gpt-5.4-mini",
-        "opencode/minimax-m2.5-free", 
+        "opencode/minimax-m2.5-free",
         "opencode/nemotron-3-super-free"
     ]
-    
+
     for model in models:
         result = _get_opencode_client(model)
         if result:
             logger.info("Auxiliary auto-detect: using OpenCode fallback (%s)", model)
             return result
-    
+
     return None
 
 
@@ -217,7 +217,7 @@ def _select_pool_entry(provider: str) -> Tuple[bool, Optional[Any]]:
     if _is_deprecated_provider(provider):
         logger.debug("Skipping credential pool for deprecated provider: %s", provider)
         return False, None
-    
+
     try:
         pool = load_pool(provider)
     except Exception as exc:
@@ -291,7 +291,7 @@ def _try_api_key_providers() -> Tuple[Optional[OpenAI], Optional[str]]:
 
 def _resolve_auto(main_runtime: Optional[Dict[str, Any]] = None) -> Tuple[Optional[OpenAI], Optional[str]]:
     """Boss-approved auto-detection chain.
-    
+
     Priority:
       1. Ollama kimi-k2.5:cloud (Primary)
       2. OpenCode big-pickle (Fallback 1)
@@ -300,21 +300,21 @@ def _resolve_auto(main_runtime: Optional[Dict[str, Any]] = None) -> Tuple[Option
       5. None (fail gracefully with warning)
     """
     global _stale_base_url_warned
-    
+
     # Step 1: Try Ollama (kimi-k2.5:cloud) - PRIMARY
     logger.debug("Auxiliary auto-detect: trying Ollama (kimi-k2.5:cloud)...")
     ollama_result = _get_ollama_client()
     if ollama_result:
         logger.info("Auxiliary auto-detect: using Ollama (kimi-k2.5:cloud)")
         return ollama_result
-    
+
     logger.debug("Ollama unavailable, trying OpenCode fallbacks...")
-    
+
     # Step 2: Try OpenCode fallbacks
     opencode_result = _try_opencode_with_fallback()
     if opencode_result:
         return opencode_result
-    
+
     # All approved providers exhausted
     logger.warning(
         "Auxiliary auto-detect: ALL approved providers unavailable "
@@ -336,18 +336,18 @@ def resolve_provider_client(
     main_runtime: Optional[Dict[str, Any]] = None,
 ) -> Tuple[Optional[Any], Optional[str]]:
     """Central router - Boss approved providers only.
-    
+
     Approved providers:
     - "ollama" or "auto" -> uses Ollama kimi-k2.5:cloud
     - "opencode" -> uses OpenCode with fallback chain
-    
+
     DEPRECATED (return None with warning):
     - "openrouter", "nous", "openai-codex", "anthropic"
     - "gemini", "google", "zai", "minimax", "deepseek", etc.
     """
     # Normalize and check for deprecated
     provider = _normalize_aux_provider(provider)
-    
+
     if provider in _DEPRECATED_PROVIDERS:
         logger.warning(
             "Provider '%s' is DEPRECATED per Boss policy. "
@@ -355,16 +355,16 @@ def resolve_provider_client(
             provider
         )
         return None, None
-    
+
     # Auto-detect uses approved chain
     if provider == "auto":
         client, resolved_model = _resolve_auto(main_runtime=main_runtime)
         if client is None:
             return None, None
         final_model = model or resolved_model
-        return (_to_async_client(client, final_model) if async_mode 
+        return (_to_async_client(client, final_model) if async_mode
                 else (client, final_model))
-    
+
     # Ollama (Boss primary)
     if provider == "ollama":
         client, default = _get_ollama_client()
@@ -372,9 +372,9 @@ def resolve_provider_client(
             logger.warning("resolve_provider_client: Ollama unavailable at %s", _OLLAMA_BASE_URL)
             return None, None
         final_model = model or default
-        return (_to_async_client(client, final_model) if async_mode 
+        return (_to_async_client(client, final_model) if async_mode
                 else (client, final_model))
-    
+
     # OpenCode (Boss fallback)
     if provider == "opencode":
         final_model = model or "gpt-5.4-mini"
@@ -389,9 +389,9 @@ def resolve_provider_client(
         if client is None:
             logger.warning("resolve_provider_client: OpenCode unavailable (no API key)")
             return None, None
-        return (_to_async_client(client, final_model) if async_mode 
+        return (_to_async_client(client, final_model) if async_mode
                 else (client, final_model))
-    
+
     # Unknown provider
     logger.warning("resolve_provider_client: unknown provider '%s'", provider)
     return None, None
@@ -400,7 +400,7 @@ def resolve_provider_client(
 def _to_async_client(sync_client, model: str):
     """Convert sync client to async."""
     from openai import AsyncOpenAI
-    
+
     async_kwargs = {
         "api_key": sync_client.api_key,
         "base_url": str(sync_client.base_url),
@@ -427,7 +427,7 @@ def get_auxiliary_client(
         if provider:
             logger.warning("Provider '%s' deprecated, using approved chain", provider)
         provider = "auto"
-    
+
     return resolve_provider_client(
         provider=provider,
         model=model,
@@ -452,7 +452,7 @@ def get_async_auxiliary_client(
         if provider:
             logger.warning("Provider '%s' deprecated, using approved chain", provider)
         provider = "auto"
-    
+
     return resolve_provider_client(
         provider=provider,
         model=model,

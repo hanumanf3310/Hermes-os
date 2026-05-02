@@ -3,6 +3,7 @@
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
+from hermes_cli.gemini_cli import GeminiCliResult
 import pytest
 
 
@@ -42,8 +43,16 @@ class TestGeminiCLIGatewayCommand:
             thread_id=None,
         )
 
-        with patch("hermes_cli.gemini_cli.resolve_gemini_cli_binary", return_value="/usr/bin/gemini"), \
-             patch("gateway.run.asyncio.create_subprocess_exec", return_value=_FakeProc()):
+        gemini_result = GeminiCliResult(
+            available=True,
+            binary="/usr/bin/gemini",
+            model="gemini-2.5-flash",
+            prompt="Reply exactly: GEMINI_OK",
+            output="GEMINI_OK",
+            exit_code=0,
+        )
+
+        with patch("hermes_cli.gemini_cli.run_gemini_cli", return_value=gemini_result):
             result = await runner._handle_gemini_cli_command(event)
 
         assert result == "GEMINI_OK"
@@ -72,7 +81,16 @@ class TestGeminiCLIGatewayCommand:
             thread_id=None,
         )
 
-        with patch("hermes_cli.gemini_cli.resolve_gemini_cli_binary", return_value=""):
+        result = GeminiCliResult(
+            available=False,
+            binary="",
+            model="gemini-2.5-flash",
+            prompt="Explain the change",
+            reason="gemini binary not found",
+            exit_code=None,
+        )
+
+        with patch("hermes_cli.gemini_cli.run_gemini_cli", return_value=result):
             result = await runner._handle_gemini_cli_command(event)
 
         assert result is None

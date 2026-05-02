@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "tasks": [
+    {
+      "branch_name": "hermes-os-backup-20260430",
+      "worktree_path": "/home/hanuman3310/hermes-agent",
+      "status": "active",
+      "created_at": "2026-04-30T15:50:57.627Z",
+      "updated_at": "2026-04-30T15:51:03.544Z"
+    }
+  ]
+}

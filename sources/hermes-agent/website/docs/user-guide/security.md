@@ -8,6 +8,10 @@ description: "Security model, dangerous command approval, user authorization, co
 
 Hermes Agent is designed with a defense-in-depth security model. This page covers every security boundary — from command approval to container isolation to user authorization on messaging platforms.
 
+For the merged hard-gate policy used by Boss and the assistant, see [Merged Hard-Gate Policy Card](/docs/reference/merged-hard-gate-policy-card) and the machine-readable source file [`merged-hard-gate-policy.yaml`](/docs/reference/merged-hard-gate-policy). The CLI, gateway, and interactive CLI now validate this policy at startup and fail closed if the gate is invalid.
+
+Policy validation in CI is handled by a separate [Policy Gate GitHub Action](https://github.com/NousResearch/hermes-agent/blob/main/.github/workflows/policy-gate.yml), so core update workflows stay untouched.
+
 ## Overview
 
 The security model has seven layers:

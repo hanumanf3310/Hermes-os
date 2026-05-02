@@ -1,0 +1,10 @@
+{
+  "session_id": "019ddf16-16cc-7991-89ff-192993f3adba",
+  "native_session_id": "019ddf16-16cc-7991-89ff-192993f3adba",
+  "started_at": "2026-04-30T15:51:01.198Z",
+  "cwd": "/home/hanuman3310/hermes-agent",
+  "pid": 10122,
+  "platform": "linux",
+  "pid_start_ticks": 1060720,
+  "pid_cmdline": "/home/hanuman3310/.hermes/node/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex/codex exec --json --skip-git-repo-check --color=never Hello"
+}

@@ -117,13 +117,13 @@ def find_latest_session_file(
     exclude_originators: Optional[set[str]] = None,
 ) -> Optional[Path]:
     """Find the most recent session JSONL file.
-    
+
     Looks for sessions in the specified directory, or searches all dates
     to find the most recent session file.
     Returns None if no session exists.
     """
     exclude_originators = exclude_originators or set()
-    
+
     if session_dir is not None:
         # Specific directory requested
         if not session_dir.exists():
@@ -141,10 +141,10 @@ def find_latest_session_file(
                 if _get_session_originator(candidate) not in exclude_originators:
                     return candidate
         return all_sessions[0] if all_sessions else None
-    
+
     if not jsonl_files:
         return None
-    
+
     # Sort by modification time, newest first
     jsonl_files.sort(key=lambda p: p.stat().st_mtime, reverse=True)
     if exclude_originators:
@@ -156,26 +156,26 @@ def find_latest_session_file(
 
 def parse_token_count_event(line: str) -> Optional[dict[str, Any]]:
     """Parse a single JSONL line looking for token_count events.
-    
+
     Returns the payload if it's a token_count event, None otherwise.
     """
     try:
         data = json.loads(line)
     except json.JSONDecodeError:
         return None
-    
+
     # Look for payload directly
     payload = data.get("payload") if isinstance(data, dict) else None
     if isinstance(payload, dict) and payload.get("type") == "token_count":
         return payload
-    
+
     # Check nested event_msg structure
     event_msg = data.get("event_msg") if isinstance(data, dict) else None
     if isinstance(event_msg, dict):
         event_payload = event_msg.get("payload")
         if isinstance(event_payload, dict) and event_payload.get("type") == "token_count":
             return event_payload
-    
+
     return None
 
 
@@ -183,7 +183,7 @@ def extract_rate_limit(limit_data: Optional[dict[str, Any]], tier: str) -> Optio
     """Extract rate limit data from a limit dictionary."""
     if not isinstance(limit_data, dict):
         return None
-    
+
     # Try to get used_percent directly first (from session files)
     used_percent = limit_data.get("used_percent")
     if used_percent is not None:
@@ -193,15 +193,15 @@ def extract_rate_limit(limit_data: Optional[dict[str, Any]], tier: str) -> Optio
             resets_at=str(resets_at) if resets_at else None,
             tier=tier,
         )
-    
+
     # Fallback: calculate from used/limit
     used = limit_data.get("used")
     limit = limit_data.get("limit")
     resets_at = limit_data.get("resets_at")
-    
+
     if used is None or limit is None or limit <= 0:
         return None
-    
+
     used_percent = (used / limit) * 100
     return CodexRateLimit(
         used_percent=used_percent,
@@ -212,26 +212,26 @@ def extract_rate_limit(limit_data: Optional[dict[str, Any]], tier: str) -> Optio
 
 def parse_session_jsonl(session_file: Path) -> Optional[CodexStatus]:
     """Parse a session JSONL file and extract the latest token_count event.
-    
+
     Scans from newest to oldest to find the most recent token_count event.
     """
     if not session_file.exists():
         return None
-    
+
     try:
         lines = session_file.read_text().strip().split("\n")
     except (IOError, OSError):
         return None
-    
+
     # Scan from newest (last lines) to oldest
     for line in reversed(lines):
         if not line.strip():
             continue
-        
+
         payload = parse_token_count_event(line)
         if payload is None:
             continue
-        
+
         # Extract token usage from nested info structure, with top-level fallback
         info = payload.get("info", {}) if isinstance(payload, dict) else {}
         token_usage = info.get("total_token_usage", {}) if isinstance(info, dict) else {}
@@ -241,15 +241,15 @@ def parse_session_jsonl(session_file: Path) -> Optional[CodexStatus]:
         model_context_window = info.get("model_context_window", 0) if isinstance(info, dict) else 0
         if not model_context_window and isinstance(payload, dict):
             model_context_window = payload.get("model_context_window", 0)
-        
+
         # Extract rate limits
         rate_limits = payload.get("rate_limits", {})
         primary_data = rate_limits.get("primary") if isinstance(rate_limits, dict) else None
         secondary_data = rate_limits.get("secondary") if isinstance(rate_limits, dict) else None
-        
+
         primary_limit = extract_rate_limit(primary_data, "primary")
         secondary_limit = extract_rate_limit(secondary_data, "secondary")
-        
+
         # Extract timestamp from the event
         timestamp = None
         event_data = json.loads(line)
@@ -259,7 +259,7 @@ def parse_session_jsonl(session_file: Path) -> Optional[CodexStatus]:
             event_msg = event_data.get("event_msg", {})
             if isinstance(event_msg, dict):
                 timestamp = timestamp or event_msg.get("timestamp") or event_msg.get("time")
-        
+
         return CodexStatus(
             total_tokens=total_tokens,
             model_context_window=model_context_window,
@@ -269,27 +269,27 @@ def parse_session_jsonl(session_file: Path) -> Optional[CodexStatus]:
             session_file=str(session_file),
             source="session_jsonl",
         )
-    
+
     return None
 
 
 def get_codex_status_via_exec(timeout: int = 60) -> Optional[CodexStatus]:
     """Get real-time Codex status by running 'codex exec' and reading session JSONL.
-    
+
     This is the recommended method because:
     - Provides complete data including rate limits
     - More stable than parsing stdout
     - Creates a fresh session to get real-time data
-    
+
     Args:
         timeout: Maximum time to wait for codex exec to complete
-        
+
     Returns:
         CodexStatus with real-time data or None if failed
     """
     import subprocess
     import time
-    
+
     try:
         # Step 1: Run codex exec to create a fresh probe session.
         result = subprocess.run(
@@ -298,7 +298,7 @@ def get_codex_status_via_exec(timeout: int = 60) -> Optional[CodexStatus]:
             text=True,
             timeout=timeout
         )
-        
+
         # Step 2: Extract the probe thread ID from stdout.
         session_id = None
         for line in result.stdout.splitlines():
@@ -314,10 +314,10 @@ def get_codex_status_via_exec(timeout: int = 60) -> Optional[CodexStatus]:
                 if session_id:
                     session_id = str(session_id)
                     break
-        
+
         if not session_id:
             return None
-        
+
         # Step 3: Wait briefly for the probe session JSONL to flush, then read
         # the session file that matches this thread_id.
         sessions_dir = DEFAULT_CODEX_SESSIONS_DIR
@@ -330,19 +330,19 @@ def get_codex_status_via_exec(timeout: int = 60) -> Optional[CodexStatus]:
                 session_file = matching[0]
                 break
             time.sleep(0.2)
-        
+
         if session_file is None:
             matching = list(sessions_dir.rglob(f"*{session_id}*.jsonl"))
             if matching:
                 matching.sort(key=lambda p: p.stat().st_mtime, reverse=True)
                 session_file = matching[0]
-        
+
         if session_file is None:
             return None
-        
+
         # Step 4: Parse the probe session file.
         return parse_session_jsonl(session_file)
-        
+
     except subprocess.TimeoutExpired:
         return None
     except Exception:
@@ -351,7 +351,7 @@ def get_codex_status_via_exec(timeout: int = 60) -> Optional[CodexStatus]:
 
 def get_realtime_codex_status() -> Optional[CodexStatus]:
     """Get real-time Codex status from today's session JSONL files (Plan A).
-    
+
     Returns None if no session exists for today - this is intentional
     to avoid returning stale data.
     """
@@ -360,7 +360,7 @@ def get_realtime_codex_status() -> Optional[CodexStatus]:
         session_file = find_latest_session_file()
     if session_file is None:
         return None
-    
+
     return parse_session_jsonl(session_file)
 
 
@@ -385,18 +385,18 @@ def load_cached_status() -> Optional[CodexStatus]:
     cache_path = _get_cache_path()
     if not cache_path.exists():
         return None
-    
+
     try:
         data = json.loads(cache_path.read_text())
     except (json.JSONDecodeError, IOError):
         return None
-    
+
     if not isinstance(data, dict):
         return None
-    
+
     primary_data = data.get("primary_limit")
     secondary_data = data.get("secondary_limit")
-    
+
     return CodexStatus(
         total_tokens=data.get("total_tokens", 0),
         model_context_window=data.get("model_context_window", 0),
@@ -411,7 +411,7 @@ def load_cached_status() -> Optional[CodexStatus]:
 def save_status_to_cache(status: CodexStatus) -> None:
     """Save Codex status to cache."""
     cache_path = _get_cache_path()
-    
+
     data = {
         "total_tokens": status.total_tokens,
         "model_context_window": status.model_context_window,
@@ -429,7 +429,7 @@ def save_status_to_cache(status: CodexStatus) -> None:
             "tier": "secondary",
         } if status.secondary_limit else None,
     }
-    
+
     try:
         cache_path.write_text(json.dumps(data, indent=2))
     except IOError:
@@ -442,7 +442,7 @@ def save_status_to_cache(status: CodexStatus) -> None:
 
 def get_status_plan_c() -> Optional[CodexStatus]:
     """Get status using Plan C: cache-first with refresh from session file.
-    
+
     Returns cached data if fresh, otherwise tries to refresh from session.
     Falls back to stale cache if session unavailable.
     """
@@ -451,12 +451,12 @@ def get_status_plan_c() -> Optional[CodexStatus]:
     if fresh_status is not None:
         save_status_to_cache(fresh_status)
         return fresh_status
-    
+
     # Fall back to cache (Plan B)
     cached = load_cached_status()
     if cached is not None:
         return cached
-    
+
     return None
 
 
@@ -469,31 +469,31 @@ import time
 
 def compare_plans() -> PlanComparison:
     """Compare Plan A, B, and C and return structured comparison.
-    
+
     This helps evaluate which approach is fastest and most reliable.
     """
     generated_at = datetime.now().isoformat()
-    
+
     # Plan A: Real-time session JSONL parsing
     start_a = time.perf_counter()
     plan_a = get_realtime_codex_status()
     elapsed_a = time.perf_counter() - start_a
-    
+
     # Plan B: Cache-only
     start_b = time.perf_counter()
     plan_b = load_cached_status()
     elapsed_b = time.perf_counter() - start_b
-    
+
     # Plan C: Cache-first with refresh
     start_c = time.perf_counter()
     plan_c = get_status_plan_c()
     elapsed_c = time.perf_counter() - start_c
-    
+
     # Determine winner based on availability and speed
     # Plan A wins if available (it's real-time)
     # Plan B wins if Plan A unavailable but cache exists
     # Plan C wins if it successfully refreshed
-    
+
     if plan_a is not None:
         winner = "A"
         speedup_b = elapsed_b / elapsed_a if elapsed_a > 0 and elapsed_b > 0 else None
@@ -508,7 +508,7 @@ def compare_plans() -> PlanComparison:
     else:
         winner = "none"
         speedup = None
-    
+
     return PlanComparison(
         plan_a=plan_a,
         plan_b=plan_b,
@@ -528,10 +528,10 @@ def _format_rate_limit(limit: Optional[CodexRateLimit]) -> str:
     """Format a rate limit for display."""
     if limit is None:
         return "N/A"
-    
+
     pct = limit.clamped_percent()
     pct_str = f"{pct:.1f}%"
-    
+
     if limit.resets_at:
         return f"{pct_str} (resets: {limit.resets_at})"
     return pct_str
@@ -541,7 +541,7 @@ def _format_relative_time(timestamp: Optional[str]) -> str:
     """Format a timestamp as relative time."""
     if not timestamp:
         return "unknown"
-    
+
     try:
         # Try ISO format
         if "T" in timestamp:
@@ -553,7 +553,7 @@ def _format_relative_time(timestamp: Optional[str]) -> str:
             ts_float = float(timestamp)
             delta = datetime.now().timestamp() - ts_float
             seconds = delta
-        
+
         if seconds < 60:
             return "just now"
         elif seconds < 3600:
@@ -583,20 +583,20 @@ def _format_debug_status_lines(status: CodexStatus) -> list[str]:
             lines.append("File Modified: unavailable")
     else:
         lines.append("Session File: unknown")
-    
+
     if status.timestamp:
         lines.append(f"Event Timestamp: {status.timestamp}")
         lines.append(f"Event Age: {_format_relative_time(status.timestamp)}")
     else:
         lines.append("Event Timestamp: unknown")
-    
+
     lines.append(f"Source: {status.source}")
     return lines
 
 
 def format_status_markdown(status: Optional[CodexStatus], show_source: bool = False, debug: bool = False) -> str:
     """Format Codex status as a markdown card for gateway display.
-    
+
     Returns a message indicating no session if status is None.
     """
     if status is None:
@@ -605,7 +605,7 @@ def format_status_markdown(status: Optional[CodexStatus], show_source: bool = Fa
             "No Codex session found for today.\n\n"
             "Start a Codex session with: `codex`"
         )
-    
+
     lines = [
         "🤖 **Codex GPT Status**",
         "",
@@ -614,26 +614,26 @@ def format_status_markdown(status: Optional[CodexStatus], show_source: bool = Fa
         f"**Total Tokens:** {status.total_tokens:,}",
         f"**Context Used:** {status.context_used_percent:.1f}%",
     ]
-    
+
     if show_source:
         lines.extend([
             "",
             f"_Source: {status.source}_",
         ])
-    
+
     if status.timestamp:
         lines.append(f"_Updated: {_format_relative_time(status.timestamp)}_")
-    
+
     if debug:
         lines.extend(["", "**Debug:**"])
         lines.extend([f"- {line}" for line in _format_debug_status_lines(status)])
-    
+
     return "\n".join(lines)
 
 
 def format_status_rich(status: Optional[CodexStatus], show_source: bool = False, debug: bool = False) -> str:
     """Format Codex status as a rich text card for CLI display.
-    
+
     Uses simple text formatting that works with rich library or plain terminal.
     """
     if status is None:
@@ -642,7 +642,7 @@ def format_status_rich(status: Optional[CodexStatus], show_source: bool = False,
             "No Codex session found for today.\n\n"
             "Start a Codex session with: codex"
         )
-    
+
     lines = [
         "🤖 Codex GPT Status",
         "",
@@ -651,20 +651,20 @@ def format_status_rich(status: Optional[CodexStatus], show_source: bool = False,
         f"Total Tokens:         {status.total_tokens:,}",
         f"Context Used:         {status.context_used_percent:.1f}%",
     ]
-    
+
     if show_source:
         lines.extend([
             "",
             f"Source: {status.source}",
         ])
-    
+
     if status.timestamp:
         lines.append(f"Updated: {_format_relative_time(status.timestamp)}")
-    
+
     if debug:
         lines.extend(["", "Debug:"])
         lines.extend([f"- {line}" for line in _format_debug_status_lines(status)])
-    
+
     return "\n".join(lines)
 
 
@@ -675,43 +675,43 @@ def format_comparison_markdown(comparison: PlanComparison) -> str:
         "",
         f"**Winner:** Plan {comparison.winner}",
     ]
-    
+
     if comparison.speedup is not None:
         lines.append(f"**Speedup:** {comparison.speedup:.2f}x")
-    
+
     lines.extend([
         "",
         "**Plan A (Session JSONL):**",
         f"  Available: {'✓' if comparison.plan_a else '✗'}",
     ])
-    
+
     if comparison.plan_a:
         lines.append(f"  Tokens: {comparison.plan_a.total_tokens:,}")
-    
+
     lines.extend([
         "",
         "**Plan B (Cache):**",
         f"  Available: {'✓' if comparison.plan_b else '✗'}",
     ])
-    
+
     if comparison.plan_b:
         lines.append(f"  Tokens: {comparison.plan_b.total_tokens:,}")
-    
+
     lines.extend([
         "",
         "**Plan C (Cache+Refresh):**",
         f"  Available: {'✓' if comparison.plan_c else '✗'}",
     ])
-    
+
     if comparison.plan_c:
         lines.append(f"  Tokens: {comparison.plan_c.total_tokens:,}")
-    
+
     lines.extend([
         "",
         f"_Cache TTL: {comparison.cache_ttl_seconds}s_",
         f"_Generated: {comparison.generated_at}_",
     ])
-    
+
     return "\n".join(lines)
 
 
@@ -722,43 +722,43 @@ def format_comparison_rich(comparison: PlanComparison) -> str:
         "",
         f"Winner: Plan {comparison.winner}",
     ]
-    
+
     if comparison.speedup is not None:
         lines.append(f"Speedup: {comparison.speedup:.2f}x")
-    
+
     lines.extend([
         "",
         "Plan A (Session JSONL):",
         f"  Available: {'Yes' if comparison.plan_a else 'No'}",
     ])
-    
+
     if comparison.plan_a:
         lines.append(f"  Tokens: {comparison.plan_a.total_tokens:,}")
-    
+
     lines.extend([
         "",
         "Plan B (Cache):",
         f"  Available: {'Yes' if comparison.plan_b else 'No'}",
     ])
-    
+
     if comparison.plan_b:
         lines.append(f"  Tokens: {comparison.plan_b.total_tokens:,}")
-    
+
     lines.extend([
         "",
         "Plan C (Cache+Refresh):",
         f"  Available: {'Yes' if comparison.plan_c else 'No'}",
     ])
-    
+
     if comparison.plan_c:
         lines.append(f"  Tokens: {comparison.plan_c.total_tokens:,}")
-    
+
     lines.extend([
         "",
         f"Cache TTL: {comparison.cache_ttl_seconds}s",
         f"Generated: {comparison.generated_at}",
     ])
-    
+
     return "\n".join(lines)
 
 
@@ -768,31 +768,31 @@ def format_comparison_rich(comparison: PlanComparison) -> str:
 
 def get_codex_status(use_cache: bool = False, refresh: bool = True) -> Optional[CodexStatus]:
     """Get Codex status with specified strategy.
-    
+
     Args:
         use_cache: If True, use cache-only (Plan B). If False, use real-time (Plan A).
         refresh: If True and use_cache is False, use Plan C (cache-first with refresh).
-    
+
     Returns:
         CodexStatus if available, None otherwise (no session found for today).
     """
     if use_cache:
         return load_cached_status()
-    
+
     if refresh:
         return get_status_plan_c()
-    
+
     return get_realtime_codex_status()
 
 
 def format_status(status: Optional[CodexStatus], format: str = "rich", show_source: bool = False) -> str:
     """Format status for the specified output format.
-    
+
     Args:
         status: The CodexStatus to format, or None for "no session" message.
         format: Either "rich" (CLI) or "markdown" (gateway).
         show_source: Whether to include the data source in output.
-    
+
     Returns:
         Formatted status string.
     """

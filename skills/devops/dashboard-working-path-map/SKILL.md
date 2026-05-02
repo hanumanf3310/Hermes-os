@@ -14,6 +14,8 @@ Use this skill whenever a task changes or adds anything that affects Hermes, Her
 
 Boss wants `dashboard.html` to be a shared working-path map and decision aid for both main Hermes and Hermes OS, not just a static visualization.
 
+When the dashboard is moved into the workspace host, prefer mounting it as `public/dashboard.html` and verify the exact file path on the live tunnel. A root tunnel or shortcut route like `/chat` can still 404 even when `/dashboard.html` works.
+
 ## Canonical file
 
 ```text
@@ -174,13 +176,13 @@ Expected rendered counts should match validator node/link counts.
 - key new nodes/links
 - any caveats
 
-## Current known baseline after dashboard validator addition
+## Current known baseline after Context Mode / RAG index update
 
-As of the validated dashboard update:
+As of the validated Context Mode / RAG index dashboard update:
 
 ```text
-nodes: 59
-links: 84
+nodes: 82
+links: 139
 ok: true
 ```
 
@@ -197,6 +199,16 @@ Important connected nodes include:
 - thClaws Update Gate
 - Dashboard Validator
 - hermes-admin
+- Context Mode RAG Index
+- Context Mode
+- Core Docs Index
+
+When adding RAG / Context Mode work to the graph, prefer three connected artifacts:
+- memory node for the verified indexing event / retrieval capability (for example `context_mode_rag_index`)
+- skill node for the Context Mode retrieval tool/layer
+- project node for the indexed corpus (for example `proj_core_docs_index`)
+
+Connect them back to Boss Profile, Hermes OS Core, Fact Store, Memory Graph, and the indexed policy/skill docs so the graph shows Context Mode as a working-memory/RAG layer that complements Fact Store rather than replacing canonical facts.
 
 ## Dynamic Fact Store mode
 
@@ -232,16 +244,21 @@ For file:// dashboards, using a hardcoded local URL like `http://127.0.0.1:9120/
 
 ## Mobile / external access pattern
 
-If Boss wants `/memory-graph/dashboard.html` accessible from a phone or outside the machine, do **not** use `file://`. Serve the page over HTTP(S) and tunnel it.
+6. If Boss wants a mobile link to the dashboard, include the exact dashboard path as well as the root URL. Do not assume shortcut routes like `/chat` exist unless they are explicitly routed; those can 404 even when `/dashboard.html` works.
+7. If the same workspace host already serves UI + API, prefer mounting `dashboard.html` inside that host instead of exposing a separate static tunnel. A single HTML file is only enough for the page shell; live graph data still needs the matching backend endpoint on the same host or an explicitly wired fallback.
+8. If the tunnel provider shows an interstitial/warning page on first visit, click through it and verify the real page behind it before claiming success.
+9. If Boss asks to "check dashboard first" or "report before doing A" for a governance-sensitive action such as RAG / Context Mode integration, do a read-only live preflight and stop with a report before editing or indexing:
 
-Working pattern learned from the real setup:
+   - Load the exact public `/dashboard.html` URL and click through any tunnel interstitial.
+   - Verify rendered counts from the page runtime (`data.nodes`, `data.links`, SVG circles/lines) and check missing link references in the browser console.
+   - Check read-only status: visible controls should be inspection/export/navigation only, not create/update/delete controls.
+   - Search the live page text/runtime for the target capability keywords, e.g. `RAG`, `Context Mode`, `Vector`, `Index`, before claiming the dashboard already covers that work.
+   - Probe expected backend endpoints such as `/health` and `/api/fact-graph`; if they return the workspace SPA HTML instead of JSON, report this as a backend/API caveat rather than treating HTTP 200 as proof of live graph data.
+   - State explicitly whether you have modified anything. If Boss requested report-first, do not modify files until Boss gives the follow-up go-ahead.
 
-1. Run one local server that serves both the dashboard and the API from the same origin.
-2. Add a one-command launcher with `up / down / status / restart`.
-3. Use a free public tunnel such as `cloudflared` quick tunnel for mobile access.
-4. Print the public URL after startup and verify it before reporting success.
-5. Keep the local URLs explicit for debugging:
-   - `http://127.0.0.1:9130/dashboard.html`
+10. If a previously shared tunnel URL stops resolving, treat it as expired and refresh the launcher/status before re-reporting.
+11. Keep the local URLs explicit for debugging:
+
    - `http://127.0.0.1:9130/api/fact-graph`
    - `http://127.0.0.1:9130/health`
 
@@ -257,6 +274,7 @@ Success criteria for the mobile-access flow:
 - `/health` returns ok
 - `/api/fact-graph` returns live data
 - public tunnel URL opens the dashboard on a phone
+- exact dashboard path is verified, not just the tunnel root
 
 ## Pitfalls
 

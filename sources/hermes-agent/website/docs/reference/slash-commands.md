@@ -29,9 +29,10 @@ Type `/` in the CLI to open the autocomplete menu. Built-in commands are case-in
 | `/undo` | Remove the last user/assistant exchange |
 | `/title` | Set a title for the current session (usage: /title My Session Name) |
 | `/compress [focus topic]` | Manually compress conversation context (flush memories + summarize). Optional focus topic narrows what the summary preserves. |
+| `/checkpoint --goal <goal> --current <state> --evidence <evidence> [--alternatives <route>]` | Evaluate a go/no-go checkpoint and return `GO`, `HOLD`, or `REDIRECT`. Use this when you need an explicit decision gate before continuing a path. |
 | `/rollback` | List or restore filesystem checkpoints (usage: /rollback [number]) |
 | `/snapshot [create\|restore <id>\|prune]` (alias: `/snap`) | Create or restore state snapshots of Hermes config/state. `create [label]` saves a snapshot, `restore <id>` reverts to it, `prune [N]` removes old snapshots, or list all with no args. |
-| `/stop` | Kill all running background processes |
+
 | `/queue <prompt>` (alias: `/q`) | Queue a prompt for the next turn (doesn't interrupt the current agent response). **Note:** `/q` is claimed by both `/queue` and `/quit`; the last registration wins, so `/q` resolves to `/quit` in practice. Use `/queue` explicitly. |
 | `/resume [name]` | Resume a previously-named session |
 | `/status` | Show session info |
@@ -64,11 +65,9 @@ Type `/` in the CLI to open the autocomplete menu. Built-in commands are case-in
 |---------|-------------|
 | `/tools [list\|disable\|enable] [name...]` | Manage tools: list available tools, or disable/enable specific tools for the current session. Disabling a tool removes it from the agent's toolset and triggers a session reset. |
 | `/toolsets` | List available toolsets |
-| `/provider` | Show provider availability and auth status. |
-| `/gemini-cli <prompt>` (alias: `/gemini_cli`) | Run Gemini CLI when available; if the binary is missing or fails, Hermes OS takes over and handles the prompt natively. |
-| `/gemini-research --question <q> --evidence <e> [--model <name>]` (alias: `/gemini_research`) | Run the Hermes → Gemini → Hermes workflow: Gemini summarizes the evidence, then Hermes verifies the result. If Gemini is unavailable, Hermes falls back immediately. |
-| `/personality [name]` | Set a personality overlay for the session. |
-
+| `/browser [connect\|disconnect\|status]` | Manage local Chrome CDP connection. `connect` attaches browser tools to a running Chrome instance (default: `ws://localhost:9222`). `disconnect` detaches. `status` shows current connection. Auto-launches Chrome if no debugger is detected. |
+| `/skills` | Search, install, inspect, or manage skills from online registries |
+| `/cron` | Manage scheduled tasks (list, add/create, edit, pause, resume, run, remove) |
 | `/reload-mcp` (alias: `/reload_mcp`) | Reload MCP servers from config.yaml |
 | `/reload` | Reload `.env` variables into the running session (picks up new API keys without restarting) |
 | `/plugins` | List installed plugins and their status |
@@ -84,7 +83,6 @@ Type `/` in the CLI to open the autocomplete menu. Built-in commands are case-in
 | `/paste` | Check clipboard for an image and attach it |
 | `/image <path>` | Attach a local image file for your next prompt. |
 | `/debug` | Upload debug report (system info + logs) and get shareable links. Also available in messaging. |
-| `/hermes-memory-graph` | Open the Hermes Memory Graph dashboard and return the public link. In Telegram this appears as `/hermes_memory_graph`. |
 | `/profile` | Show active profile name and home directory |
 
 ### Exit
@@ -129,8 +127,6 @@ The messaging gateway supports the following built-in commands inside Telegram, 
 | `/stop` | Kill all running background processes and interrupt the running agent. |
 | `/model [provider:model]` | Show or change the model. Supports provider switches (`/model zai:glm-5`), custom endpoints (`/model custom:model`), named custom providers (`/model custom:local:qwen`), and auto-detect (`/model custom`). Use `--global` to persist the change to config.yaml. |
 | `/provider` | Show provider availability and auth status. |
-| `/gemini-cli <prompt>` (alias: `/gemini_cli`) | Run Gemini CLI when available; if the binary is missing or fails, Hermes OS takes over and handles the prompt natively. |
-| `/gemini-research --question <q> --evidence <e> [--model <name>]` (alias: `/gemini_research`) | Run the Hermes → Gemini → Hermes workflow: Gemini summarizes the evidence, then Hermes verifies the result. If Gemini is unavailable, Hermes falls back immediately. |
 | `/personality [name]` | Set a personality overlay for the session. |
 | `/fast [normal\|fast\|status]` | Toggle fast mode — OpenAI Priority Processing / Anthropic Fast Mode. |
 | `/retry` | Retry the last message. |
@@ -157,7 +153,7 @@ The messaging gateway supports the following built-in commands inside Telegram, 
 | `/restart` | Gracefully restart the gateway after draining active runs. When the gateway comes back online, it sends a confirmation to the requester's chat/thread. |
 | `/fast [normal\|fast\|status]` | Toggle fast mode — OpenAI Priority Processing / Anthropic Fast Mode. |
 | `/debug` | Upload debug report (system info + logs) and get shareable links. |
-| `/hermes-memory-graph` | Open the Hermes Memory Graph dashboard and return the public link. In Telegram this appears as `/hermes_memory_graph`. |
+| `/debug` | Upload debug report (system info + logs) and get shareable links. |
 | `/help` | Show messaging help. |
 | `/<skill-name>` | Invoke any installed skill by name. |
 
@@ -167,5 +163,4 @@ The messaging gateway supports the following built-in commands inside Telegram, 
 - `/verbose` is **CLI-only by default**, but can be enabled for messaging platforms by setting `display.tool_progress_command: true` in `config.yaml`. When enabled, it cycles the `display.tool_progress` mode and saves to config.
 - `/sethome`, `/update`, `/restart`, `/approve`, `/deny`, and `/commands` are **messaging-only** commands.
 - `/status`, `/background`, `/voice`, `/reload-mcp`, `/rollback`, `/snapshot`, `/debug`, `/fast`, and `/yolo` work in **both** the CLI and the messaging gateway.
-- `/hermes-memory-graph` works in **both** the CLI and the messaging gateway. Telegram shows it as `/hermes_memory_graph`.
 - `/voice join`, `/voice channel`, and `/voice leave` are only meaningful on Discord.

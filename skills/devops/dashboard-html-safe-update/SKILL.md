@@ -155,6 +155,28 @@ This is especially important when the requested outcome is:
 - preserving read-only behavior for governance dashboards
 - changing summary/legend text without changing data flow
 
+### Step 4.6: Anti-loop checkpoint rule
+
+When the requested change risks becoming an endless audit or repeated refinement loop, stop and insert an explicit checkpoint before doing more work.
+
+Use a checkpoint to decide one of three paths:
+- continue with the current plan,
+- switch to a better approach,
+- or stop because the current state is already good enough.
+
+Prefer a checkpoint when:
+- the dashboard is already current and the user asks for a small update, not a re-audit,
+- the same file keeps pulling the workflow back into old context,
+- the work starts revisiting prior reports instead of changing the live artifact,
+- or the user explicitly warns about infinite-loop behavior.
+
+At the checkpoint, report only:
+- what is already current,
+- what still needs to change,
+- and the go/no-go decision.
+
+Do not keep expanding scope past the checkpoint unless the user clearly asks for it.
+
 ### Step 4.6: Read-only dashboard rule
 
 For Hermes Memory Graph / Fact governance dashboards:
@@ -185,6 +207,174 @@ grep '"source\|target": "X"' dashboard.html
 2. Replace broken reference
 3. Verify node exists before link
 
+### Issue 1.5: Validator reports only a few nodes while browser renders many
+
+**Symptom:** browser runtime shows the graph is healthy (for example `data.nodes.length` and SVG circles are high, missing refs are zero), but `validate-dashboard-graph.py` reports `nodes=3` or many missing references.
+
+**Root cause pattern:** the validator may be parsing the static JavaScript arrays with a naive split such as `split('],', 1)`. This breaks when node objects contain nested arrays, for example `impact_scope: [...]`, and truncates the nodes array before the real end.
+
+**Fix:** update the validator parser to extract the top-level `nodes` / `links` arrays with bracket-aware parsing that respects quoted strings and nested brackets. Then rerun:
+
+```bash
+rtk run "$HOME/.hermes/scripts/validate-dashboard-graph.py --json /home/hanuman3310/hermes-workspace/memory-graph/dashboard.html"
+```
+
+**Bracket-aware injection pattern (Python):**
+
+```python
+#!/usr/bin/env python3
+from pathlib import Path
+
+dashboard = Path("/home/hanuman3310/hermes-workspace/memory-graph/dashboard.html")
+content = dashboard.read_text()
+
+def find_close_bracket(content, start_idx):
+    """Find the ']' that closes the array starting at start_idx,
+    accounting for strings, nested braces, and escape sequences."""
+    brace = 0
+    in_string = False
+    escape = False
+    for i in range(start_idx, len(content)):
+        ch = content[i]
+        if in_string:
+            if escape:
+                escape = False
+            elif ch == '\\':
+                escape = True
+            elif ch == '"':
+                in_string = False
+        else:
+            if ch == '"':
+                in_string = True
+            elif ch == '{':
+                brace += 1
+            elif ch == '}':
+                brace -= 1
+            elif ch == ']':
+                if brace == 0:
+                    return i
+    return -1
+
+def find_last_brace(content, end_pos, start_pos):
+    """Find the index of the closing '}' of the last object
+    in the range [start_pos, end_pos]."""
+    bracket = 0
+    in_str = False
+    esc = False
+    for j in range(end_pos - 1, start_pos - 1, -1):
+        ch = content[j]
+        if in_str:
+            if esc:
+                esc = False
+            elif ch == '\\':
+                esc = True
+            elif ch == '"':
+                in_str = False
+        else:
+            if ch == '"':
+                in_str = True
+            elif ch == '}':
+                bracket += 1
+                if bracket == 1:
+                    return j
+            elif ch == '{':
+                bracket -= 1
+    return -1
+
+# Locate arrays
+nodes_start = content.find('"nodes": [') + len('"nodes": [')
+nodes_end   = find_close_bracket(content, nodes_start)
+links_start = content.find('"links": [', nodes_end) + len('"links": [')
+links_end   = find_close_bracket(content, links_start)
+
+# Find last item braces
+last_node_brace = find_last_brace(content, nodes_end, nodes_start)
+last_link_brace = find_last_brace(content, links_end, links_start)
+
+# Inject after last_node_brace + 1
+new_node_entry = (
+    "\n                ,\n"
+    "                {\n"
+    '                    "id": "new_feature_x",\n'
+    '                    "label": "New Feature X",\n'
+    '                    "description": "...",\n'
+    '                    "type": "feature"\n'
+    "                }")
+content = content[:last_node_brace + 1] + new_node_entry + content[last_node_brace + 1:]
+
+# Re-calc links bounds after node injection (indices shift)
+# ... repeat find_close_bracket / find_last_brace on updated content
+new_link_entry = "..."
+# content = content[:last_link_brace + 1] + new_link_entry + content[last_link_brace + 1:]
+
+# Save
+Path("dashboard.html").write_text(content, encoding="utf-8")
+print("Injected safely")
+```
+
+**Key safety rules:**
+- Never use `content.replace()`, `split('],')`, or regex on the raw JS object.
+- Always account for `"` inside strings and `\\` escape sequences.
+- After injecting a node, re-locate the links array because character offsets shift.
+- Verify by browser runtime (`data.nodes.length`) and grep (`grep '"id": "new_feature_x"'`), not by a validator whose parser may share the same naive split bug.
+
+**Verification:** validator counts must match browser runtime counts:
+
+```javascript
+({
+  dataNodes: data.nodes.length,
+  dataLinks: data.links.length,
+  circles: document.querySelectorAll('circle').length,
+  lines: document.querySelectorAll('line').length,
+  missingRefs: data.links.filter(l => !new Set(data.nodes.map(n => n.id)).has(typeof l.source === 'object' ? l.source.id : l.source) || !new Set(data.nodes.map(n => n.id)).has(typeof l.target === 'object' ? l.target.id : l.target)).length
+})
+```
+
+### Issue 1.6: Graph crashes from an accidental array hole / double comma
+
+**Symptom:** the dashboard page contains the new node text and the raw JavaScript may pass syntax checks, but the D3 force simulation fails with an error like:
+
+```text
+TypeError: Cannot set properties of undefined (setting 'index')
+```
+
+or the browser render count is `circles: 0`, `lines: 0` even though the static text exists.
+
+**Root cause pattern:** an insertion added an extra comma between node objects, creating a sparse array entry / `undefined` node:
+
+```javascript
+{ /* previous node */ },
+
+,
+{ id: "new_node", ... }
+```
+
+JavaScript can parse this, but D3 receives an `undefined` node and crashes when assigning indexes.
+
+**Fix:** inspect the inserted node boundary and remove the stray comma/blank sparse entry so the array is contiguous:
+
+```javascript
+{ /* previous node */ },
+{ id: "new_node", ... }
+```
+
+**Verification:** after the fix, run both structural and runtime checks:
+
+```bash
+rtk run "node --check /tmp/dashboard_inline.js"
+rtk run "$HOME/.hermes/scripts/validate-dashboard-graph.py --json /home/hanuman3310/hermes-workspace/memory-graph/dashboard.html"
+```
+
+Then browser-check rendered counts match validator counts:
+
+```javascript
+({
+  circles: document.querySelectorAll('circle').length,
+  lines: document.querySelectorAll('line').length,
+  bodyHasNewNode: document.body.innerText.includes('New Node Name')
+})
+```
+
 ### Issue 2: Graph not displaying
 
 ```javascript
@@ -196,9 +386,10 @@ grep '"source\|target": "X"' dashboard.html
 // - SyntaxError: Unexpected token
 // - ReferenceError: data is not defined
 // - TypeError: Cannot read property 'x' of undefined
+// - TypeError: Cannot set properties of undefined (setting 'index')
 
-// Fix: Validate JSON structure
-const data = JSON.parse(jsonString); // Should not throw
+// Fix: Validate JSON structure and inspect for sparse array entries / double commas
+const data = JSON.parse(jsonString); // Should not throw for JSON payloads
 ```
 
 ### Issue 3: Blank canvas

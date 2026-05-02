@@ -832,6 +832,16 @@ export function DashboardScreen() {
             accentColor={palette.accentSecondary}
             onClick={() => navigate({ to: '/settings' })}
           />
+          <QuickAction
+            label="Memory Graph"
+            icon="🧠"
+            accentColor={palette.accent}
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                window.location.href = '/dashboard.html'
+              }
+            }}
+          />
         </div>
       </div>
 

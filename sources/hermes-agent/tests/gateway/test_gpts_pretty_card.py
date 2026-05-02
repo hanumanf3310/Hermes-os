@@ -41,9 +41,9 @@ class TestStatusPrettyCard:
             primary_limit=CodexRateLimit(used_percent=75.5, resets_at=None, tier="primary"),
             secondary_limit=None,
         )
-        
+
         output = format_status_rich(status)
-        
+
         assert "75.5%" in output or "75.5" in output
         assert "Primary Rate Limit" in output
 
@@ -55,9 +55,9 @@ class TestStatusPrettyCard:
             primary_limit=None,
             secondary_limit=CodexRateLimit(used_percent=45.0, resets_at=None, tier="secondary"),
         )
-        
+
         output = format_status_rich(status)
-        
+
         assert "45.0%" in output or "45.0" in output or "45%" in output
         assert "Secondary Rate Limit" in output
 
@@ -67,9 +67,9 @@ class TestStatusPrettyCard:
             total_tokens=12345,
             model_context_window=200000,
         )
-        
+
         output = format_status_rich(status)
-        
+
         assert "12,345" in output
         assert "Total Tokens" in output
 
@@ -79,9 +79,9 @@ class TestStatusPrettyCard:
             total_tokens=10000,
             model_context_window=200000,
         )
-        
+
         output = format_status_rich(status)
-        
+
         # 10000/200000 = 5%
         assert "5.0%" in output or "5%" in output
         assert "Context Used" in output
@@ -93,9 +93,9 @@ class TestStatusPrettyCard:
             model_context_window=200000,
             primary_limit=CodexRateLimit(used_percent=50.0, resets_at="2024-01-15T14:30:00Z", tier="primary"),
         )
-        
+
         output = format_status_rich(status)
-        
+
         assert "resets" in output or "2024" in output
 
     def test_gateway_output_shows_primary_rate_limit(self):
@@ -106,9 +106,9 @@ class TestStatusPrettyCard:
             primary_limit=CodexRateLimit(used_percent=75.5, resets_at=None, tier="primary"),
             secondary_limit=None,
         )
-        
+
         output = format_status_markdown(status)
-        
+
         assert "75.5%" in output or "75.5" in output
         assert "**Primary Rate Limit:**" in output  # With colon
 
@@ -120,9 +120,9 @@ class TestStatusPrettyCard:
             primary_limit=None,
             secondary_limit=CodexRateLimit(used_percent=45.0, resets_at=None, tier="secondary"),
         )
-        
+
         output = format_status_markdown(status)
-        
+
         assert "45.0%" in output or "45.0" in output or "45%" in output
         assert "**Secondary Rate Limit:**" in output  # With colon
 
@@ -132,9 +132,9 @@ class TestStatusPrettyCard:
             total_tokens=12345,
             model_context_window=200000,
         )
-        
+
         output = format_status_markdown(status)
-        
+
         assert "12,345" in output
         assert "**Total Tokens:**" in output  # With colon
 
@@ -144,9 +144,9 @@ class TestStatusPrettyCard:
             total_tokens=10000,
             model_context_window=200000,
         )
-        
+
         output = format_status_markdown(status)
-        
+
         assert "5.0%" in output or "5%" in output
         assert "**Context Used:**" in output  # With colon
 
@@ -156,9 +156,9 @@ class TestStatusPrettyCard:
             total_tokens=5000,
             model_context_window=200000,
         )
-        
+
         output = format_status_markdown(status)
-        
+
         # Should use ** for bold headers
         assert "🤖 **Codex GPT Status**" in output
         assert "**Total Tokens:**" in output  # With colon
@@ -174,21 +174,21 @@ class TestNoSessionMessage:
     def test_cli_no_session_message_is_clear(self):
         """Test CLI shows clear message when no session exists."""
         output = format_status_rich(None)
-        
+
         assert "No Codex session found for today" in output
         assert "Start a Codex session" in output or "codex" in output.lower()
 
     def test_gateway_no_session_message_is_clear(self):
         """Test Gateway shows clear message when no session exists."""
         output = format_status_markdown(None)
-        
+
         assert "No Codex session found for today" in output
         assert "Start a Codex session" in output or "`codex`" in output
 
     def test_cli_no_session_not_fake_data(self):
         """Test CLI doesn't fabricate fake data when no session exists."""
         output = format_status_rich(None)
-        
+
         # Should NOT show any token counts or percentages
         assert "Total Tokens" not in output or "0" not in output
         assert "%" not in output or "No Codex session" in output
@@ -196,7 +196,7 @@ class TestNoSessionMessage:
     def test_gateway_no_session_not_fake_data(self):
         """Test Gateway doesn't fabricate fake data when no session exists."""
         output = format_status_markdown(None)
-        
+
         # Should NOT show any token counts or percentages
         assert "**Total Tokens**" not in output
         assert "%" not in output or "No Codex session" in output
@@ -218,10 +218,10 @@ class TestIdenticalOutputStructure:
             secondary_limit=CodexRateLimit(used_percent=25.0, resets_at="2024-01-15T12:00:00Z", tier="secondary"),
             timestamp="2024-01-15T10:30:00Z",
         )
-        
+
         cli_output = format_status_rich(status)
         gateway_output = format_status_markdown(status)
-        
+
         # Both should contain the same core information
         assert "Primary" in cli_output
         assert "Primary" in gateway_output
@@ -231,11 +231,11 @@ class TestIdenticalOutputStructure:
         assert "Total Tokens" in gateway_output
         assert "Context" in cli_output
         assert "Context" in gateway_output
-        
+
         # Both should show the same values (with comma formatting)
         assert "5,000" in cli_output
         assert "5,000" in gateway_output
-        assert "50" in cli_output  # 50% 
+        assert "50" in cli_output  # 50%
         assert "50" in gateway_output
 
     def test_both_handle_missing_data_consistently(self):
@@ -246,10 +246,10 @@ class TestIdenticalOutputStructure:
             primary_limit=None,
             secondary_limit=None,
         )
-        
+
         cli_output = format_status_rich(status)
         gateway_output = format_status_markdown(status)
-        
+
         # Both should show N/A for missing limits
         assert "N/A" in cli_output or "Primary" in cli_output
         assert "N/A" in gateway_output or "Primary" in gateway_output
@@ -266,7 +266,7 @@ class TestComparisonPrettyCard:
         """Test CLI comparison output shows the winning plan."""
         comparison = compare_plans()
         output = format_comparison_rich(comparison)
-        
+
         assert "Winner" in output
         assert comparison.winner in output
 
@@ -274,7 +274,7 @@ class TestComparisonPrettyCard:
         """Test Gateway comparison output shows the winning plan."""
         comparison = compare_plans()
         output = format_comparison_markdown(comparison)
-        
+
         assert "Winner**" in output or "Winner:" in output
         assert comparison.winner in output
 
@@ -282,7 +282,7 @@ class TestComparisonPrettyCard:
         """Test CLI comparison shows all three plans."""
         comparison = compare_plans()
         output = format_comparison_rich(comparison)
-        
+
         assert "Plan A" in output
         assert "Plan B" in output
         assert "Plan C" in output
@@ -291,7 +291,7 @@ class TestComparisonPrettyCard:
         """Test Gateway comparison shows all three plans."""
         comparison = compare_plans()
         output = format_comparison_markdown(comparison)
-        
+
         assert "Plan A" in output
         assert "Plan B" in output
         assert "Plan C" in output
@@ -300,7 +300,7 @@ class TestComparisonPrettyCard:
         """Test CLI comparison shows availability status for each plan."""
         comparison = compare_plans()
         output = format_comparison_rich(comparison)
-        
+
         # Should indicate whether each plan is available
         assert "Available" in output or "Yes" in output or "No" in output
 
@@ -308,7 +308,7 @@ class TestComparisonPrettyCard:
         """Test Gateway comparison shows availability status for each plan."""
         comparison = compare_plans()
         output = format_comparison_markdown(comparison)
-        
+
         # Should indicate whether each plan is available
         assert "Available" in output or "✓" in output or "✗" in output
 
@@ -324,7 +324,7 @@ class TestEndToEndPrettyCard:
         """Test that full pipeline produces valid CLI output."""
         session_dir = tmp_path / "sessions"
         session_dir.mkdir(parents=True)
-        
+
         # Create realistic session file
         session_file = session_dir / "session.jsonl"
         events = [
@@ -342,18 +342,18 @@ class TestEndToEndPrettyCard:
             }
         ]
         session_file.write_text("\n".join(json.dumps(e) for e in events))
-        
+
         with patch("hermes_cli.codex_bridge.DEFAULT_CODEX_SESSIONS_DIR", session_dir):
             status = get_realtime_codex_status()
             cli_output = format_status_rich(status)
-        
+
         # Verify pretty card format
         assert "🤖" in cli_output or "Codex" in cli_output
         assert "Primary Rate Limit" in cli_output
         assert "Secondary Rate Limit" in cli_output
         assert "Total Tokens" in cli_output
         assert "Context Used" in cli_output
-        
+
         # Verify values are present
         assert "15,000" in cli_output or "15000" in cli_output
         assert "80" in cli_output  # 80% primary
@@ -363,7 +363,7 @@ class TestEndToEndPrettyCard:
         """Test that full pipeline produces valid Gateway output."""
         session_dir = tmp_path / "sessions"
         session_dir.mkdir(parents=True)
-        
+
         # Create realistic session file
         session_file = session_dir / "session.jsonl"
         events = [
@@ -381,18 +381,18 @@ class TestEndToEndPrettyCard:
             }
         ]
         session_file.write_text("\n".join(json.dumps(e) for e in events))
-        
+
         with patch("hermes_cli.codex_bridge.DEFAULT_CODEX_SESSIONS_DIR", session_dir):
             status = get_realtime_codex_status()
             gateway_output = format_status_markdown(status)
-        
+
         # Verify pretty card format with markdown (with colons)
         assert "🤖 **Codex GPT Status**" in gateway_output
         assert "**Primary Rate Limit:**" in gateway_output
         assert "**Secondary Rate Limit:**" in gateway_output
         assert "**Total Tokens:**" in gateway_output
         assert "**Context Used:**" in gateway_output
-        
+
         # Verify values are present
         assert "15,000" in gateway_output or "15000" in gateway_output
         assert "80" in gateway_output
@@ -402,7 +402,7 @@ class TestEndToEndPrettyCard:
         """Test that CLI and Gateway output have equivalent structure."""
         session_dir = tmp_path / "sessions"
         session_dir.mkdir(parents=True)
-        
+
         # Create realistic session file
         session_file = session_dir / "session.jsonl"
         events = [
@@ -420,19 +420,19 @@ class TestEndToEndPrettyCard:
             }
         ]
         session_file.write_text("\n".join(json.dumps(e) for e in events))
-        
+
         with patch("hermes_cli.codex_bridge.DEFAULT_CODEX_SESSIONS_DIR", session_dir):
             status = get_realtime_codex_status()
             cli_output = format_status_rich(status)
             gateway_output = format_status_markdown(status)
-        
+
         # Both should have same data points
         cli_lines = cli_output.split("\n")
         gateway_lines = gateway_output.split("\n")
-        
+
         # Both should have similar number of lines (allowing for formatting differences)
         assert abs(len(cli_lines) - len(gateway_lines)) <= 3
-        
+
         # Both should show the same key values
         assert "25,000" in cli_output or "25000" in cli_output
         assert "25,000" in gateway_output or "25000" in gateway_output
@@ -458,9 +458,9 @@ class TestRelativeTimeDisplay:
             model_context_window=200000,
             timestamp=recent,
         )
-        
+
         output = format_status_rich(status)
-        
+
         assert "Updated" in output or "ago" in output
 
     def test_gateway_shows_relative_time(self):
@@ -471,9 +471,9 @@ class TestRelativeTimeDisplay:
             model_context_window=200000,
             timestamp=recent,
         )
-        
+
         output = format_status_markdown(status)
-        
+
         assert "Updated" in output or "_Updated:" in output or "ago" in output
 
 
@@ -491,9 +491,9 @@ class TestSourceIndicator:
             model_context_window=200000,
             source="session_jsonl",
         )
-        
+
         output = format_status_rich(status, show_source=True)
-        
+
         assert "session_jsonl" in output or "Source" in output
 
     def test_cli_hides_source_when_not_requested(self):
@@ -503,9 +503,9 @@ class TestSourceIndicator:
             model_context_window=200000,
             source="session_jsonl",
         )
-        
+
         output = format_status_rich(status, show_source=False)
-        
+
         assert "session_jsonl" not in output
         assert "Source" not in output
 
@@ -516,9 +516,9 @@ class TestSourceIndicator:
             model_context_window=200000,
             source="session_jsonl",
         )
-        
+
         output = format_status_markdown(status, show_source=True)
-        
+
         assert "session_jsonl" in output or "_Source" in output
 
     def test_gateway_hides_source_when_not_requested(self):
@@ -528,9 +528,9 @@ class TestSourceIndicator:
             model_context_window=200000,
             source="session_jsonl",
         )
-        
+
         output = format_status_markdown(status, show_source=False)
-        
+
         assert "session_jsonl" not in output
         assert "_Source" not in output
 

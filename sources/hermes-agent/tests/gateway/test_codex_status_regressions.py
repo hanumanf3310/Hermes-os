@@ -68,17 +68,17 @@ class TestSessionFileDiscovery:
         """Test that find_latest_session_file returns the most recently modified file."""
         session_dir = tmp_path / "sessions"
         session_dir.mkdir(parents=True)
-        
+
         # Create older file
         older_file = session_dir / "session_001.jsonl"
         older_file.write_text("")
         older_mtime = (datetime.now() - timedelta(hours=1)).timestamp()
         os.utime(older_file, (older_mtime, older_mtime))
-        
+
         # Create newer file
         newer_file = session_dir / "session_002.jsonl"
         newer_file.write_text("")
-        
+
         result = find_latest_session_file(session_dir)
         assert result == newer_file
 
@@ -104,7 +104,7 @@ class TestTokenCountEventParsing:
                 }
             }
         })
-        
+
         payload = parse_token_count_event(line)
         assert payload is not None
         assert payload["type"] == "token_count"
@@ -138,7 +138,7 @@ class TestTokenCountEventParsing:
                 }
             }
         })
-        
+
         payload = parse_token_count_event(line)
         assert payload is not None
         assert payload["total_token_usage"]["total_tokens"] == 3000
@@ -159,7 +159,7 @@ class TestRateLimitExtraction:
             "resets_at": "2024-01-15T14:00:00Z"
         }
         limit = extract_rate_limit(data, "primary")
-        
+
         assert limit is not None
         assert limit.tier == "primary"
         assert limit.used_percent == 75.0
@@ -245,9 +245,9 @@ class TestSessionJsonlParsing:
             }
         ]
         file.write_text("\n".join(json.dumps(e) for e in events))
-        
+
         result = parse_session_jsonl(file)
-        
+
         assert result is not None
         assert result.total_tokens == 5000
         assert result.model_context_window == 200000
@@ -279,9 +279,9 @@ class TestSessionJsonlParsing:
             }
         ]
         file.write_text("\n".join(json.dumps(e) for e in events))
-        
+
         result = parse_session_jsonl(file)
-        
+
         assert result is not None
         assert result.total_tokens == 5000  # Newest event
 
@@ -297,10 +297,10 @@ class TestPlanA:
         """Test Plan A returns None when no session exists for today."""
         # Mock today's session dir to point to temp path
         fake_session_dir = tmp_path / "sessions"
-        
+
         with patch("hermes_cli.codex_bridge.DEFAULT_CODEX_SESSIONS_DIR", fake_session_dir):
             result = get_realtime_codex_status()
-        
+
         assert result is None
 
     def test_get_realtime_codex_status_skips_codex_exec_probe_sessions(self, tmp_path):
@@ -368,23 +368,23 @@ class TestPlanB:
         """Test loading cache when no cache exists returns None."""
         with patch("hermes_cli.codex_bridge._get_cache_path", return_value=tmp_path / "cache.json"):
             result = load_cached_status()
-        
+
         assert result is None
 
     def test_load_cached_status_invalid_json(self, tmp_path, monkeypatch):
         """Test loading cache with invalid JSON returns None."""
         cache_file = tmp_path / "cache.json"
         cache_file.write_text("not valid json")
-        
+
         with patch("hermes_cli.codex_bridge._get_cache_path", return_value=cache_file):
             result = load_cached_status()
-        
+
         assert result is None
 
     def test_save_and_load_cached_status(self, tmp_path):
         """Test saving and loading cache preserves data."""
         cache_file = tmp_path / "cache.json"
-        
+
         status = CodexStatus(
             total_tokens=10000,
             model_context_window=200000,
@@ -393,11 +393,11 @@ class TestPlanB:
             timestamp="2024-01-15T10:30:00Z",
             source="session_jsonl"
         )
-        
+
         with patch("hermes_cli.codex_bridge._get_cache_path", return_value=cache_file):
             save_status_to_cache(status)
             loaded = load_cached_status()
-        
+
         assert loaded is not None
         assert loaded.total_tokens == 10000
         assert loaded.model_context_window == 200000
@@ -418,14 +418,14 @@ class TestPlanC:
         session_dir = tmp_path / "sessions"
         session_dir.mkdir(parents=True)
         cache_file = tmp_path / "cache.json"
-        
+
         # Create stale cache with old data
         stale_status = CodexStatus(
             total_tokens=1000,  # Old data
             model_context_window=200000,
             source="cache"
         )
-        
+
         # Create fresh session file
         session_file = session_dir / "session.jsonl"
         session_file.write_text(json.dumps({
@@ -436,15 +436,15 @@ class TestPlanC:
                 "model_context_window": 200000
             }
         }))
-        
+
         with patch("hermes_cli.codex_bridge.DEFAULT_CODEX_SESSIONS_DIR", session_dir), \
              patch("hermes_cli.codex_bridge._get_cache_path", return_value=cache_file):
             # Save stale cache first
             save_status_to_cache(stale_status)
-            
+
             # Plan C should refresh from session file
             result = get_status_plan_c()
-        
+
         assert result is not None
         assert result.total_tokens == 5000  # Fresh data from session
         assert result.source == "session_jsonl"
@@ -453,19 +453,19 @@ class TestPlanC:
         """Test Plan C falls back to cache when no session available."""
         session_dir = tmp_path / "sessions"  # Empty - no session files
         cache_file = tmp_path / "cache.json"
-        
+
         # Create cache with data
         cached_status = CodexStatus(
             total_tokens=3000,
             model_context_window=200000,
             source="cache"
         )
-        
+
         with patch("hermes_cli.codex_bridge.DEFAULT_CODEX_SESSIONS_DIR", session_dir), \
              patch("hermes_cli.codex_bridge._get_cache_path", return_value=cache_file):
             save_status_to_cache(cached_status)
             result = get_status_plan_c()
-        
+
         assert result is not None
         assert result.total_tokens == 3000
         assert result.source == "cache"
@@ -483,7 +483,7 @@ class TestPlanComparison:
         session_dir = tmp_path / "sessions"
         session_dir.mkdir(parents=True)
         cache_file = tmp_path / "cache.json"
-        
+
         # Create session file for Plan A
         session_file = session_dir / "session.jsonl"
         session_file.write_text(json.dumps({
@@ -494,11 +494,11 @@ class TestPlanComparison:
                 "model_context_window": 200000
             }
         }))
-        
+
         with patch("hermes_cli.codex_bridge.DEFAULT_CODEX_SESSIONS_DIR", session_dir), \
              patch("hermes_cli.codex_bridge._get_cache_path", return_value=cache_file):
             comparison = compare_plans()
-        
+
         assert isinstance(comparison, PlanComparison)
         assert comparison.winner == "A"
         assert comparison.plan_a is not None
@@ -510,7 +510,7 @@ class TestPlanComparison:
         session_dir = tmp_path / "sessions"
         session_dir.mkdir(parents=True)
         cache_file = tmp_path / "cache.json"
-        
+
         # Create session file
         session_file = session_dir / "session.jsonl"
         session_file.write_text(json.dumps({
@@ -521,11 +521,11 @@ class TestPlanComparison:
                 "model_context_window": 200000
             }
         }))
-        
+
         with patch("hermes_cli.codex_bridge.DEFAULT_CODEX_SESSIONS_DIR", session_dir), \
              patch("hermes_cli.codex_bridge._get_cache_path", return_value=cache_file):
             comparison = compare_plans()
-        
+
         assert comparison.winner == "A"
         assert comparison.plan_a is not None
         assert comparison.plan_a.total_tokens == 5000
@@ -534,15 +534,15 @@ class TestPlanComparison:
         """Test Plan C wins when only cache is available (no session)."""
         session_dir = tmp_path / "sessions"  # Empty
         cache_file = tmp_path / "cache.json"
-        
+
         # Create cache
         cached_status = CodexStatus(total_tokens=3000, model_context_window=200000, source="cache")
-        
+
         with patch("hermes_cli.codex_bridge.DEFAULT_CODEX_SESSIONS_DIR", session_dir), \
              patch("hermes_cli.codex_bridge._get_cache_path", return_value=cache_file):
             save_status_to_cache(cached_status)
             comparison = compare_plans()
-        
+
         assert comparison.winner == "C"
         assert comparison.plan_c is not None
 
@@ -608,9 +608,9 @@ class TestFormatters:
             timestamp="2024-01-15T10:30:00Z",
             source="session_jsonl"
         )
-        
+
         output = format_status_markdown(status)
-        
+
         assert "🤖 **Codex GPT Status**" in output
         assert "5,000" in output  # Formatted with comma
         assert "Primary Rate Limit" in output
@@ -632,9 +632,9 @@ class TestFormatters:
             timestamp="2024-01-15T10:30:00Z",
             source="session_jsonl"
         )
-        
+
         output = format_status_rich(status)
-        
+
         assert "🤖 Codex GPT Status" in output
         assert "5,000" in output  # Formatted with comma
         assert "Primary Rate Limit" in output
@@ -650,9 +650,9 @@ class TestFormatters:
             generated_at="2024-01-15T10:30:00Z",
             cache_ttl_seconds=300
         )
-        
+
         output = format_comparison_markdown(comparison)
-        
+
         assert "⚡ **Codex Status Plan Comparison**" in output
         assert "Winner:** Plan none" in output
         assert "Plan A" in output
@@ -670,9 +670,9 @@ class TestFormatters:
             generated_at="2024-01-15T10:30:00Z",
             cache_ttl_seconds=300
         )
-        
+
         output = format_comparison_rich(comparison)
-        
+
         assert "⚡ Codex Status Plan Comparison" in output
         assert "Winner: Plan none" in output
 
@@ -680,7 +680,7 @@ class TestFormatters:
         """Test rate limit formatting with reset time."""
         limit = CodexRateLimit(used_percent=50.0, resets_at="2024-01-15T11:00:00Z", tier="primary")
         output = _format_rate_limit(limit)
-        
+
         assert "50.0%" in output
         assert "resets" in output
 
@@ -688,7 +688,7 @@ class TestFormatters:
         """Test rate limit formatting without reset time."""
         limit = CodexRateLimit(used_percent=75.0, resets_at=None, tier="primary")
         output = _format_rate_limit(limit)
-        
+
         assert output == "75.0%"
 
     def test_format_rate_limit_none(self):
@@ -732,7 +732,7 @@ class TestEndToEnd:
         """Test complete pipeline from session file to formatted output."""
         session_dir = tmp_path / "sessions"
         session_dir.mkdir(parents=True)
-        
+
         # Create a realistic session file
         session_file = session_dir / "session_20240115_103000.jsonl"
         events = [
@@ -762,17 +762,17 @@ class TestEndToEnd:
             }
         ]
         session_file.write_text("\n".join(json.dumps(e) for e in events))
-        
+
         with patch("hermes_cli.codex_bridge.DEFAULT_CODEX_SESSIONS_DIR", session_dir):
             # Step 1: Get real-time status
             status = get_realtime_codex_status()
-            
+
             # Step 2: Format for CLI
             cli_output = format_status_rich(status)
-            
+
             # Step 3: Format for Gateway
             gateway_output = format_status_markdown(status)
-        
+
         # Verify end-to-end
         assert status is not None
         assert status.total_tokens == 15000  # Newest event
@@ -788,7 +788,7 @@ class TestEndToEnd:
         session_dir = tmp_path / "sessions"
         session_dir.mkdir(parents=True)
         cache_file = tmp_path / "cache.json"
-        
+
         # Create session file for Plan A to succeed
         session_file = session_dir / "session.jsonl"
         session_file.write_text(json.dumps({
@@ -799,11 +799,11 @@ class TestEndToEnd:
                 "model_context_window": 200000
             }
         }))
-        
+
         with patch("hermes_cli.codex_bridge.DEFAULT_CODEX_SESSIONS_DIR", session_dir), \
              patch("hermes_cli.codex_bridge._get_cache_path", return_value=cache_file):
             comparison = compare_plans()
-        
+
         # Plan A should win with a speedup factor
         assert comparison.winner == "A"
         assert comparison.speedup is not None or comparison.speedup is None  # Either is valid

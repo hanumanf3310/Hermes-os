@@ -408,6 +408,29 @@ Some suites mutate `TERMINAL_ENV` / `TERMINAL_MODAL_MODE` / `TERMINAL_CWD`. If l
 - Keep pairing artifacts under per-test `tmp_path`
 - Re-run targeted test, then full suite, to verify contamination is eliminated
 
+### 6) Telegram gateway runtime contract drift
+
+Hermes gateway bugs often come from contract mismatches between platform adapters, event dataclasses, shared base helpers, and async startup paths. This commonly appears after partial live-runtime updates where `~/.hermes/hermes-agent` differs from a development/source checkout.
+
+**Common symptoms:**
+- `ImportError: cannot import name '...' from gateway.platforms.base` while importing `gateway.platforms.telegram`
+- `TypeError: resolve_proxy_url() got an unexpected keyword argument 'target_hosts'` or other helper signature drift
+- `TypeError: MessageEvent.__init__() got an unexpected keyword argument ...`
+- Async helper called from sync startup code, producing `'coroutine' object has no attribute ...'` or `was never awaited`
+- Service is failed or stuck in `activating (auto-restart)` under systemd, so Telegram never reaches polling mode
+- Service is active under systemd but Telegram messages still do not flow
+
+**Debugging approach:**
+- Read the exact journal/systemd error before changing code; do not assume Telegram delivery failed until polling is proven
+- Verify the live runtime checkout (`~/.hermes/hermes-agent`) and venv import path, not only the development/source checkout
+- Trace the import/call site in `gateway/platforms/telegram.py` and the receiving contract in `gateway/platforms/base.py` or the relevant dataclass
+- For missing shared helpers, add the smallest backward-compatible base helper/export that matches the adapter contract; examples include media cache helpers such as `cache_video_from_bytes` plus associated supported type maps, or shared channel/topic helpers such as `resolve_channel_prompt(...)`
+- If adapters pass new `MessageEvent(...)` kwargs after a partial live-runtime update, update the shared dataclass contract too; example: add `channel_prompt: Optional[str] = None` when Telegram/Slack/Discord/Mattermost pass `channel_prompt=`
+- For helper signature drift, prefer backward-compatible optional parameters rather than changing all callers when the old behavior remains valid; examples include accepting `target_hosts` in `resolve_proxy_url(...)` while preserving legacy proxy resolution
+- Check whether shared helpers like channel-directory builders are async and must be awaited or scheduled with the running loop
+- Verify imports first from the live venv, then restart/reset the user service, then prove `[Telegram] Connected to Telegram (polling mode)` and fresh inbound logs before claiming recovery
+- If the test wrapper fails because the live venv lacks `pip` or optional test plugins, report the verification caveat and fall back to focused import/runtime evidence instead of claiming full test coverage
+
 **If 3+ fixes failed:** Question the architecture (Phase 4 step 5).
 
 ## Full-suite failure cluster triage
