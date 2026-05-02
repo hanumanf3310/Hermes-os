@@ -2,11 +2,10 @@
 
 When an agent is running, the base adapter's Level 1 guard in
 handle_message() intercepts all incoming messages and queues them as
-pending.  Certain commands (/stop, /new, /reset, /approve, /deny,
-/status) must bypass this guard and be dispatched directly to the gateway
-runner — otherwise they are queued as user text and either:
-  - leak into the conversation as agent input (/stop, /new), or
-  - deadlock (/approve, /deny — agent blocks on Event.wait)
+pending. Certain commands (/stop, /new, /reset, /approve, /deny,
+/status, /checkpoint, /hermes-memory-graph) must bypass this guard and be dispatched directly
+to the gateway runner — otherwise they are queued as user text and can
+leak into the conversation or deadlock the agent.
 
 These tests verify that the bypass works at the adapter level and that
 the safety net in _run_agent discards leaked command text.
@@ -175,6 +174,66 @@ class TestCommandBypassActiveSession:
         assert any("handled:background" in r for r in adapter.sent_responses), (
             "/background response was not sent back to the user"
         )
+
+    @pytest.mark.asyncio
+    async def test_checkpoint_bypasses_guard(self):
+        """/checkpoint must bypass so it can act as a go/no-go gate."""
+        adapter = _make_adapter()
+        sk = _session_key()
+        adapter._active_sessions[sk] = asyncio.Event()
+
+        await adapter.handle_message(_make_event('/checkpoint --goal "Ship the patch" --evidence "tests passed"'))
+
+        assert sk not in adapter._pending_messages
+        assert any("handled:checkpoint" in r for r in adapter.sent_responses)
+
+    @pytest.mark.asyncio
+    async def test_memory_graph_bypasses_guard(self):
+        """/hermes-memory-graph must bypass so the dashboard opens immediately."""
+        adapter = _make_adapter()
+        sk = _session_key()
+        adapter._active_sessions[sk] = asyncio.Event()
+
+        await adapter.handle_message(_make_event("/hermes-memory-graph"))
+
+        assert sk not in adapter._pending_messages
+        assert any("handled:hermes-memory-graph" in r for r in adapter.sent_responses)
+
+    @pytest.mark.asyncio
+    async def test_gemini_cli_bypasses_guard(self):
+        """/gemini-cli must bypass so fallback routing happens immediately."""
+        adapter = _make_adapter()
+        sk = _session_key()
+        adapter._active_sessions[sk] = asyncio.Event()
+
+        await adapter.handle_message(_make_event("/gemini-cli Reply exactly: GEMINI_OK"))
+
+        assert sk not in adapter._pending_messages
+        assert any("handled:gemini-cli" in r for r in adapter.sent_responses)
+
+    @pytest.mark.asyncio
+    async def test_gemini_research_bypasses_guard(self):
+        """/gemini-research must bypass so the workflow can run immediately."""
+        adapter = _make_adapter()
+        sk = _session_key()
+        adapter._active_sessions[sk] = asyncio.Event()
+
+        await adapter.handle_message(_make_event('/gemini-research --question "What changed?" --evidence "docs updated"'))
+
+        assert sk not in adapter._pending_messages
+        assert any("handled:gemini-research" in r for r in adapter.sent_responses)
+
+    @pytest.mark.asyncio
+    async def test_hermes_os_bypasses_guard(self):
+        """/hermes-os must bypass so mode activation is immediate."""
+        adapter = _make_adapter()
+        sk = _session_key()
+        adapter._active_sessions[sk] = asyncio.Event()
+
+        await adapter.handle_message(_make_event("/hermes-os"))
+
+        assert sk not in adapter._pending_messages
+        assert any("handled:hermes-os" in r for r in adapter.sent_responses)
 
 
 # ---------------------------------------------------------------------------

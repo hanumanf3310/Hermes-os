@@ -1,0 +1,57 @@
+name: Policy Gate
+
+"on":
+  pull_request:
+    branches: [main]
+    paths:
+      - 'website/docs/reference/merged-hard-gate-policy.yaml'
+      - 'website/docs/reference/merged-hard-gate-policy.schema.json'
+      - 'website/docs/reference/merged-hard-gate-policy-card.md'
+      - 'tools/merged_policy_validator.py'
+      - 'hermes_cli/policy_gate.py'
+      - 'tests/tools/test_merged_policy_validator.py'
+      - 'tests/cli/test_policy_gate_startup.py'
+      - 'tests/hermes_cli/test_policy_gate_startup.py'
+      - '.github/workflows/policy-gate.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: policy-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python 3.11
+        run: uv python install 3.11
+
+      - name: Install dependencies
+        run: |
+          uv venv .venv --python 3.11
+          source .venv/bin/activate
+          uv pip install -e ".[all,dev]"
+
+      - name: Validate merged hard-gate policy
+        run: |
+          source .venv/bin/activate
+          python -m tools.merged_policy_validator website/docs/reference/merged-hard-gate-policy.yaml
+
+      - name: Run policy gate tests
+        run: |
+          source .venv/bin/activate
+          python -m pytest -q \
+            tests/tools/test_merged_policy_validator.py \
+            tests/cli/test_policy_gate_startup.py \
+            tests/hermes_cli/test_policy_gate_startup.py
+        env:
+          OPENROUTER_API_KEY: ""
+          OPENAI_API_KEY: ""
+          NOUS_API_KEY: ""

@@ -1,0 +1,2035 @@
+From 73b29213b965bb15e18b1a0f37acd7a5224e2c6d Mon Sep 17 00:00:00 2001
+From: Hanuman3310 <hanuman3310@users.noreply.github.com>
+Date: Thu, 30 Apr 2026 09:45:12 +0700
+Subject: [PATCH] chore: refresh Hermes OS update safety backup
+
+---
+ restore/BOOTSTRAP.md                          |   9 +
+ restore/LAST_VERIFIED.json                    |   8 +
+ restore/MANIFEST.json                         |  47 +-
+ restore/PROTECTED_FILES.yaml                  |  21 +
+ restore/UPDATE_SAFETY.md                      |  26 ++
+ sources/hermes-agent/cli.py                   | 252 ++++++-----
+ .../hermes-agent/gateway/platforms/base.py    |   2 +-
+ sources/hermes-agent/gateway/run.py           | 424 ++++++++++++------
+ sources/hermes-agent/hermes_cli/commands.py   |  24 +-
+ .../hermes_cli/hermes_os_format.py            | 107 +++++
+ sources/hermes-agent/hermes_cli/main.py       |   7 +
+ .../test_hermes_backup_freshness_gate.py      | 138 ++++++
+ .../tools/hermes_backup_freshness_gate.py     | 262 +++++++++++
+ .../tools/merged_policy_validator.py          | 176 ++++++++
+ .../reference/merged-hard-gate-policy-card.md |  37 ++
+ .../merged-hard-gate-policy.schema.json       | 103 +++++
+ .../reference/merged-hard-gate-policy.yaml    |  64 +++
+ 17 files changed, 1444 insertions(+), 263 deletions(-)
+ create mode 100644 restore/LAST_VERIFIED.json
+ create mode 100644 restore/PROTECTED_FILES.yaml
+ create mode 100644 restore/UPDATE_SAFETY.md
+ create mode 100644 sources/hermes-agent/hermes_cli/hermes_os_format.py
+ create mode 100644 sources/hermes-agent/tests/tools/test_hermes_backup_freshness_gate.py
+ create mode 100644 sources/hermes-agent/tools/hermes_backup_freshness_gate.py
+ create mode 100644 sources/hermes-agent/tools/merged_policy_validator.py
+ create mode 100644 sources/hermes-agent/website/docs/reference/merged-hard-gate-policy-card.md
+ create mode 100644 sources/hermes-agent/website/docs/reference/merged-hard-gate-policy.schema.json
+ create mode 100644 sources/hermes-agent/website/docs/reference/merged-hard-gate-policy.yaml
+
+diff --git a/restore/BOOTSTRAP.md b/restore/BOOTSTRAP.md
+index e975007..591bbc4 100644
+--- a/restore/BOOTSTRAP.md
++++ b/restore/BOOTSTRAP.md
+@@ -27,3 +27,12 @@ selected skills, command wrappers, and thclaws restore material.
+ 
+ ## GitHub note
+ The actual `Repo.env` used for upload lives outside the repo and is not committed.
++
++## Update safety restore order
++
++1. Restore source trees and wrappers only after reviewing `restore/MANIFEST.json`.
++2. Restore policy gate files from `sources/hermes-agent/website/docs/reference/` and `sources/hermes-agent/tools/merged_policy_validator.py`.
++3. Restore Hermes OS status formatter `sources/hermes-agent/hermes_cli/hermes_os_format.py` when status parity is affected.
++4. Run `python3 tools/hermes_backup_freshness_gate.py --pretty` from the live Hermes Agent checkout before any core update.
++5. Validate policy, launcher parity, and gateway/Telegram command contract before declaring the system ready.
++
+diff --git a/restore/LAST_VERIFIED.json b/restore/LAST_VERIFIED.json
+new file mode 100644
+index 0000000..46dc184
+--- /dev/null
++++ b/restore/LAST_VERIFIED.json
+@@ -0,0 +1,8 @@
++{
++  "policy_gate_files_present": true,
++  "repo": "https://github.com/hanumanf3310/Hermes-os.git",
++  "secret_scan_required_before_push": true,
++  "source_dev_checkout": "/home/hanuman3310/hermes-agent",
++  "update_safety_gate_present": true,
++  "verified_at_bangkok": "2026-04-30T09:41:35+07:00"
++}
+diff --git a/restore/MANIFEST.json b/restore/MANIFEST.json
+index 6cb9d18..67363ea 100644
+--- a/restore/MANIFEST.json
++++ b/restore/MANIFEST.json
+@@ -1,9 +1,17 @@
+ {
+-  "repo_url": "https://github.com/hanumanf3310/Hermes-os.git",
+   "branch_mode": "main",
++  "excluded": [
++    ".env / secrets / tokens",
++    "logs",
++    "sessions",
++    "__pycache__",
++    "node_modules",
++    "target",
++    "dist/build artifacts",
++    "runtime caches",
++    "GitUpload tool folder"
++  ],
+   "included": {
+-    "sources/hermes-agent": "full working tree, runtime/build noise excluded",
+-    "sources/hermes-workspace": "full working tree, runtime/build noise excluded",
+     "bin": [
+       "hermes-os",
+       "hermes-off",
+@@ -16,6 +24,12 @@
+       "preupdate-hermes-json",
+       "preupdate-hermes-summary"
+     ],
++    "policy_gate": [
++      "sources/hermes-agent/website/docs/reference/merged-hard-gate-policy.yaml",
++      "sources/hermes-agent/website/docs/reference/merged-hard-gate-policy.schema.json",
++      "sources/hermes-agent/website/docs/reference/merged-hard-gate-policy-card.md",
++      "sources/hermes-agent/tools/merged_policy_validator.py"
++    ],
+     "skills": [
+       "autonomous-ai-agents/delegate-to-opencode",
+       "autonomous-ai-agents/enterprise-agent-fleet-phased-integration",
+@@ -69,22 +83,25 @@
+       "software-development/execution-backend-candidate-evaluation",
+       "software-development/legacy-string-cleanup-outside-repo"
+     ],
++    "sources/hermes-agent": "full working tree, runtime/build noise excluded",
++    "sources/hermes-workspace": "full working tree, runtime/build noise excluded",
++    "status_parity": [
++      "sources/hermes-agent/hermes_cli/hermes_os_format.py"
++    ],
+     "thclaws": [
+       "bin/thclaws-safe",
+       "bin/thclaws-update-gate",
+       "releases/thclaws-c69986b-20260426",
+       "settings.json"
++    ],
++    "update_safety_gate": [
++      "sources/hermes-agent/tools/hermes_backup_freshness_gate.py",
++      "sources/hermes-agent/tests/tools/test_hermes_backup_freshness_gate.py",
++      "restore/UPDATE_SAFETY.md",
++      "restore/PROTECTED_FILES.yaml",
++      "restore/LAST_VERIFIED.json"
+     ]
+   },
+-  "excluded": [
+-    ".env / secrets / tokens",
+-    "logs",
+-    "sessions",
+-    "__pycache__",
+-    "node_modules",
+-    "target",
+-    "dist/build artifacts",
+-    "runtime caches",
+-    "GitUpload tool folder"
+-  ]
+-}
+\ No newline at end of file
++  "repo_url": "https://github.com/hanumanf3310/Hermes-os.git",
++  "verified_at_bangkok": "2026-04-30T09:41:35+07:00"
++}
+diff --git a/restore/PROTECTED_FILES.yaml b/restore/PROTECTED_FILES.yaml
+new file mode 100644
+index 0000000..190e2de
+--- /dev/null
++++ b/restore/PROTECTED_FILES.yaml
+@@ -0,0 +1,21 @@
++protected_files:
++  - sources/hermes-agent/cli.py
++  - sources/hermes-agent/hermes_cli/main.py
++  - sources/hermes-agent/hermes_cli/commands.py
++  - sources/hermes-agent/gateway/run.py
++  - sources/hermes-agent/gateway/platforms/base.py
++  - sources/hermes-agent/agent/skill_commands.py
++  - sources/hermes-agent/model_tools.py
++  - sources/hermes-agent/toolsets.py
++  - sources/hermes-agent/hermes_cli/hermes_os_format.py
++policy_files:
++  - sources/hermes-agent/website/docs/reference/merged-hard-gate-policy.yaml
++  - sources/hermes-agent/website/docs/reference/merged-hard-gate-policy.schema.json
++  - sources/hermes-agent/website/docs/reference/merged-hard-gate-policy-card.md
++  - sources/hermes-agent/tools/merged_policy_validator.py
++update_safety_files:
++  - sources/hermes-agent/tools/hermes_backup_freshness_gate.py
++  - sources/hermes-agent/tests/tools/test_hermes_backup_freshness_gate.py
++runtime_state_files:
++  - ~/.hermes/state/hermes-os.json
++  - ~/.hermes/gateway_hermes_os_mode.json
+diff --git a/restore/UPDATE_SAFETY.md b/restore/UPDATE_SAFETY.md
+new file mode 100644
+index 0000000..82fcc7e
+--- /dev/null
++++ b/restore/UPDATE_SAFETY.md
+@@ -0,0 +1,26 @@
++# Hermes OS Update Safety Gate
++
++This backup repository is part of the Hermes OS core-update safety process.
++Before any Hermes Agent core update reaches the live runtime, the backup must be
++fresh enough to restore the protected Hermes OS control-plane files.
++
++## Required pre-update checks
++
++1. Clone this repository with `--depth 1`.
++2. Verify `restore/MANIFEST.json` exists.
++3. Verify all paths in `restore/PROTECTED_FILES.yaml` exist.
++4. From the live Hermes Agent checkout, run:
++
++   ```bash
++   python3 tools/hermes_backup_freshness_gate.py --pretty
++   ```
++
++5. If the report says `blocking: true`, refresh this backup before updating core.
++6. Only proceed with core update after local dev, live runtime, launcher parity,
++   policy validator, and gateway/Telegram smoke checks pass.
++
++## Restore warning
++
++Do not use this repository as a blind filesystem overlay. Restore selected files
++according to `restore/PROTECTED_FILES.yaml` and re-run policy/launcher/gateway
++smoke tests before claiming success.
+diff --git a/sources/hermes-agent/cli.py b/sources/hermes-agent/cli.py
+index 83dc0b4..e110004 100644
+--- a/sources/hermes-agent/cli.py
++++ b/sources/hermes-agent/cli.py
+@@ -3969,7 +3969,6 @@ class HermesCLI:
+             return []
+         try:
+             sessions = self._session_db.list_sessions_rich(
+-                source="cli",
+                 exclude_sources=["tool"],
+                 limit=limit,
+             )
+@@ -4228,6 +4227,25 @@ class HermesCLI:
+         else:
+             _cprint(f"  ↻ Resumed session {target_id}{title_part} — no messages, starting fresh.")
+ 
++    def _handle_continue_command(self) -> None:
++        """Handle /continue — resume the most recent session (no args needed)."""
++        if not self._session_db:
++            _cprint("  Session database not available.")
++            return
++
++        recent = self._list_recent_sessions(limit=1)
++        if not recent:
++            _cprint("  No previous session found to continue.")
++            return
++
++        target_id = recent[0]["id"]
++        if target_id == self.session_id:
++            _cprint("  Already on the most recent session.")
++            return
++
++        # Delegate to /resume with the resolved ID
++        self._handle_resume_command(f"/resume {target_id}")
++
+     def _handle_branch_command(self, cmd_original: str) -> None:
+         """Handle /branch [name] — fork the current session into a new independent copy.
+ 
+@@ -5451,8 +5469,12 @@ class HermesCLI:
+                     _cprint("  Session database not available.")
+         elif canonical == "new":
+             self.new_session()
++        elif canonical == "sessions":
++            self._show_recent_sessions(reason="sessions", limit=20)
+         elif canonical == "resume":
+             self._handle_resume_command(cmd_original)
++        elif canonical == "continue":
++            self._handle_continue_command()
+         elif canonical == "model":
+             self._handle_model_switch(cmd_original)
+         elif canonical == "provider":
+@@ -5499,23 +5521,20 @@ class HermesCLI:
+             self._manual_compress(cmd_original)
+         elif canonical == "usage":
+             self._show_usage()
+-        elif canonical == "gpts":
+-            self._handle_gpts_command(cmd_original)
+-        elif canonical == "gemini-cli":
+-            self._handle_gemini_cli_command(cmd_original)
+-        elif canonical == "gemini-research":
+-            self._handle_gemini_research_command(cmd_original)
+         elif canonical == "insights":
+             self._show_insights(cmd_original)
+         elif canonical == "debug":
+             self._handle_debug_command()
++        elif canonical == "gemini-cli":
++            self._handle_gemini_cli_command(cmd_original)
++        elif canonical == "gemini-research":
++            self._handle_gemini_research_command(cmd_original)
+         elif canonical == "hermes-memory-graph":
+-            from hermes_cli.memory_graph import ensure_memory_graph_ready, format_memory_graph_message
+-            try:
+-                status = ensure_memory_graph_ready()
+-                self.console.print(format_memory_graph_message(status))
+-            except Exception as e:
+-                self.console.print(f"  Failed to open Hermes Memory Graph: {e}")
++            self._handle_memory_graph_command(cmd_original)
++        elif canonical == "checkpoint":
++            self._handle_checkpoint_command(cmd_original)
++        elif canonical == "hermes-os":
++            self._handle_hermes_os_command(cmd_original)
+         elif canonical == "paste":
+             self._handle_paste_command()
+         elif canonical == "image":
+@@ -6002,6 +6021,125 @@ class HermesCLI:
+         except Exception:
+             return False
+ 
++    def _handle_hermes_os_command(self, cmd: str):
++        """Handle /hermes-os [on|off|status|dashboard|policy|fleet|rtk] — enter/control Hermes OS mode."""
++        import subprocess
++
++        parts = cmd.strip().split(maxsplit=1)
++        # Root command /hermes_os (or /hermes-os) should activate Hermes OS immediately.
++        subcmd = parts[1].strip().lower() if len(parts) > 1 else "on"
++        valid_cmds = {"on", "off", "status", "dashboard", "policy", "fleet", "rtk"}
++
++        if subcmd not in valid_cmds:
++            _cprint(f"  Usage: /hermes-os [{'|'.join(sorted(valid_cmds))}]")
++            return
++
++        try:
++            result = subprocess.run(
++                ["hermes-os", subcmd],
++                capture_output=True,
++                text=True,
++                timeout=30,
++            )
++            output = (result.stdout or result.stderr or "").strip()
++            from hermes_cli.hermes_os_format import (
++                format_hermes_os_off_message,
++                format_hermes_os_on_message,
++                strip_ansi,
++            )
++
++            clean_output = strip_ansi(output)
++            if result.returncode == 0:
++                if subcmd == "on":
++                    _cprint(f"  {format_hermes_os_on_message(clean_output, chat_scoped=False)}")
++                elif subcmd == "off":
++                    _cprint(f"  {format_hermes_os_off_message(clean_output, chat_scoped=False)}")
++                else:
++                    _cprint(f"  {clean_output or '✅ Done'}")
++            else:
++                _cprint(f"  ❌ Error: {clean_output or 'Command failed'}")
++        except FileNotFoundError:
++            _cprint("  ❌ hermes-os command not found. Is the skill installed?")
++        except subprocess.TimeoutExpired:
++            _cprint("  ⏳ Command timed out after 30s")
++        except Exception as e:
++            _cprint(f"  ❌ Failed: {e}")
++
++    def _handle_gemini_cli_command(self, cmd: str) -> None:
++        """Run Gemini CLI and fall back to Hermes OS when unavailable."""
++        from hermes_cli.gemini_cli import (
++            gemini_cli_fallback_message,
++            parse_gemini_cli_request,
++            run_gemini_cli,
++        )
++
++        parts = cmd.strip().split(maxsplit=1)
++        args = parts[1].strip() if len(parts) > 1 else ""
++        request = parse_gemini_cli_request(args)
++        if not request.prompt:
++            print("Usage: /gemini-cli [--model <model>] <prompt>")
++            return
++
++        result = run_gemini_cli(request.prompt, model=request.model)
++        if result.available:
++            if result.output:
++                print(result.output)
++            return
++
++        print(gemini_cli_fallback_message(result.reason))
++        if hasattr(self, "_pending_input"):
++            self._pending_input.put(request.prompt)
++
++    def _handle_gemini_research_command(self, cmd: str) -> None:
++        """Run the Gemini research workflow and queue verification/fallback prompts."""
++        from hermes_cli.gemini_workflow import (
++            format_gemini_workflow_result,
++            parse_gemini_research_request,
++            run_gemini_research_workflow,
++        )
++
++        parts = cmd.strip().split(maxsplit=1)
++        args = parts[1].strip() if len(parts) > 1 else ""
++        request = parse_gemini_research_request(args)
++        if not request.question or not request.evidence:
++            print("Usage: /gemini-research --question <q> --evidence <e> [--model <model>]")
++            return
++
++        result = run_gemini_research_workflow(request.question, request.evidence, model=request.model)
++        print(format_gemini_workflow_result(result))
++        if hasattr(self, "_pending_input"):
++            next_prompt = result.verification_prompt if result.available else result.fallback_prompt
++            self._pending_input.put(next_prompt)
++
++    def _handle_memory_graph_command(self, cmd: str) -> None:
++        """Open Hermes Memory Graph and print the current status."""
++        try:
++            from hermes_cli.memory_graph import ensure_memory_graph_ready, format_memory_graph_message
++
++            status = ensure_memory_graph_ready()
++            self.console.print(format_memory_graph_message(status))
++        except Exception as e:
++            self.console.print(f"❌ Failed to open Hermes Memory Graph: {e}")
++
++    def _handle_checkpoint_command(self, cmd: str) -> None:
++        """Run the checkpoint / go-no-go gate and print the decision card."""
++        from hermes_cli.checkpoint_gate import (
++            checkpoint_usage,
++            format_checkpoint_result,
++            parse_checkpoint_request,
++            run_checkpoint_gate,
++        )
++
++        parts = cmd.strip().split(maxsplit=1)
++        args = parts[1].strip() if len(parts) > 1 else ""
++        if not args:
++            self.console.print(checkpoint_usage())
++            return
++
++        request = parse_checkpoint_request(args)
++        result = run_checkpoint_gate(request)
++        self.console.print(format_checkpoint_result(result))
++
+     def _handle_browser_command(self, cmd: str):
+         """Handle /browser connect|disconnect|status — manage live Chrome CDP connection."""
+         import platform as _plat
+@@ -6564,94 +6702,6 @@ class HermesCLI:
+         except Exception as e:
+             print(f"  Error generating insights: {e}")
+ 
+-    def _handle_gemini_cli_command(self, command: str = "/gemini-cli"):
+-        """Run Gemini CLI when available; otherwise queue the prompt back to Hermes OS."""
+-        from hermes_cli.gemini_cli import (
+-            gemini_cli_fallback_message,
+-            parse_gemini_cli_request,
+-            run_gemini_cli,
+-        )
+-
+-        args = command.split(None, 1)[1].strip() if " " in command else ""
+-        request = parse_gemini_cli_request(args)
+-        if not request.prompt:
+-            print("  Usage: /gemini-cli [--model <name>] <prompt>")
+-            print("  When Gemini CLI is unavailable, the prompt is routed back to Hermes OS.")
+-            return
+-
+-        result = run_gemini_cli(request.prompt, model=request.model)
+-        if result.available:
+-            output = (result.output or "").strip()
+-            if output:
+-                print(output)
+-            else:
+-                print("  Gemini CLI returned no output.")
+-            return
+-
+-        print(f"  {gemini_cli_fallback_message(result.reason)}")
+-        self._pending_input.put(request.prompt)
+-
+-    def _handle_gemini_research_command(self, command: str = "/gemini-research"):
+-        """Run the Hermes → Gemini → Hermes research workflow."""
+-        from hermes_cli.gemini_workflow import (
+-            format_gemini_workflow_result,
+-            parse_gemini_research_request,
+-            run_gemini_research_workflow,
+-        )
+-
+-        args = command.split(None, 1)[1].strip() if " " in command else ""
+-        request = parse_gemini_research_request(args)
+-        if not request.question or not request.evidence:
+-            print("  Usage: /gemini-research --question <question> --evidence <evidence> [--model <name>]")
+-            print("  You can also use: /gemini-research <question> ||| <evidence>")
+-            return
+-
+-        result = run_gemini_research_workflow(request.question, request.evidence, model=request.model)
+-        print(format_gemini_workflow_result(result))
+-        queued_prompt = result.verification_prompt if result.available else result.fallback_prompt
+-        if queued_prompt:
+-            self._pending_input.put(queued_prompt)
+-
+-    def _handle_gpts_command(self, command: str = "/gpts"):
+-        """Show real-time Codex GPT status from session JSONL files.
+-        
+-        Uses get_codex_status_via_exec() for real-time data including rate limits.
+-        Supports --compare flag to show Plan A/B/C comparison.
+-        """
+-        from hermes_cli.codex_bridge import (
+-            get_codex_status_via_exec,
+-            get_realtime_codex_status,
+-            compare_plans,
+-            format_status_rich,
+-            format_comparison_rich,
+-        )
+-        
+-        # Parse arguments
+-        parts = command.split()
+-        show_compare = "--compare" in parts
+-        show_debug = "--debug" in parts
+-        
+-        if show_compare:
+-            comparison = compare_plans()
+-            output = format_comparison_rich(comparison)
+-        else:
+-            # Primary: Real-time via exec (includes rate limits)
+-            # Never fall back to cached/session-only data here; stale output is worse than an explicit failure.
+-            status = get_codex_status_via_exec(timeout=60)
+-            if status is None:
+-                output = (
+-                    "🤖 Codex GPT Status\n\n"
+-                    "Unable to retrieve live Codex status right now.\n"
+-                    "Stale cached/session fallback is disabled to avoid showing old values."
+-                )
+-            else:
+-                output = format_status_rich(status, show_source=False, debug=show_debug)
+-        
+-        print()
+-        for line in output.split("\n"):
+-            print(f"  {line}")
+-        print()
+-
+     def _check_config_mcp_changes(self) -> None:
+         """Detect mcp_servers changes in config.yaml and auto-reload MCP connections.
+ 
+diff --git a/sources/hermes-agent/gateway/platforms/base.py b/sources/hermes-agent/gateway/platforms/base.py
+index f7943da..539807e 100644
+--- a/sources/hermes-agent/gateway/platforms/base.py
++++ b/sources/hermes-agent/gateway/platforms/base.py
+@@ -1509,7 +1509,7 @@ class BasePlatformAdapter(ABC):
+             # session lifecycle and its cleanup races with the running task
+             # (see PR #4926).
+             cmd = event.get_command()
+-            if cmd in ("approve", "deny", "status", "stop", "new", "reset", "background", "restart"):
++            if cmd in ("approve", "deny", "status", "checkpoint", "stop", "new", "reset", "background", "restart", "hermes-os", "hermes_os", "hermes-memory-graph", "hermes_memory_graph", "gemini-cli", "gemini_cli", "gemini-research", "gemini_research"):
+                 logger.debug(
+                     "[%s] Command '/%s' bypassing active-session guard for %s",
+                     self.name, cmd, session_key,
+diff --git a/sources/hermes-agent/gateway/run.py b/sources/hermes-agent/gateway/run.py
+index aba35d4..042a40b 100644
+--- a/sources/hermes-agent/gateway/run.py
++++ b/sources/hermes-agent/gateway/run.py
+@@ -630,6 +630,9 @@ class GatewayRunner:
+         # Per-chat voice reply mode: "off" | "voice_only" | "all"
+         self._voice_mode: Dict[str, str] = self._load_voice_modes()
+ 
++        # Per-chat Hermes OS mode: "off" | "on"
++        self._hermes_os_mode: Dict[str, str] = self._load_hermes_os_modes()
++
+         # Track background tasks to prevent garbage collection mid-execution
+         self._background_tasks: set = set()
+ 
+@@ -695,6 +698,128 @@ class GatewayRunner:
+             chat_id for chat_id, mode in self._voice_mode.items() if mode == "off"
+         )
+ 
++    # -- Hermes OS mode persistence --------------------------------------
++
++    _HERMES_OS_MODE_PATH = _hermes_home / "gateway_hermes_os_mode.json"
++    _HERMES_OS_STATE_PATH = _hermes_home / "state" / "hermes-os.json"
++    _HERMES_OS_SKILL_MARKER = '[SYSTEM: The user has invoked the "hermes-os" skill'
++
++    def _load_hermes_os_modes(self) -> Dict[str, str]:
++        try:
++            data = json.loads(self._HERMES_OS_MODE_PATH.read_text())
++        except (FileNotFoundError, json.JSONDecodeError, OSError):
++            return {}
++
++        if not isinstance(data, dict):
++            return {}
++
++        valid_modes = {"off", "on"}
++        return {
++            str(chat_id): mode
++            for chat_id, mode in data.items()
++            if mode in valid_modes
++        }
++
++    def _save_hermes_os_modes(self) -> None:
++        try:
++            self._HERMES_OS_MODE_PATH.parent.mkdir(parents=True, exist_ok=True)
++            self._HERMES_OS_MODE_PATH.write_text(
++                json.dumps(getattr(self, "_hermes_os_mode", {}), indent=2)
++            )
++        except OSError as e:
++            logger.warning("Failed to save Hermes OS modes: %s", e)
++
++    def _set_hermes_os_mode(self, chat_id: str, mode: str) -> None:
++        chat_key = str(chat_id)
++        if mode not in {"on", "off"}:
++            raise ValueError(f"Unsupported Hermes OS mode: {mode}")
++        if not hasattr(self, "_hermes_os_mode") or not isinstance(getattr(self, "_hermes_os_mode", None), dict):
++            self._hermes_os_mode = {}
++        self._hermes_os_mode[chat_key] = mode
++        self._save_hermes_os_modes()
++
++    def _hermes_os_mode_for_chat(self, chat_id: str) -> str:
++        return getattr(self, "_hermes_os_mode", {}).get(str(chat_id), "off")
++
++    def _load_hermes_os_global_mode(self) -> str:
++        """Return global Hermes OS mode; fail closed on missing/invalid state."""
++        try:
++            data = json.loads(self._HERMES_OS_STATE_PATH.read_text())
++        except (FileNotFoundError, json.JSONDecodeError, OSError):
++            return "hermes_off"
++        if not isinstance(data, dict):
++            return "hermes_off"
++        mode = str(data.get("mode") or "hermes_off")
++        return mode if mode in {"hermes_os", "hermes_off"} else "hermes_off"
++
++    def _hermes_os_global_enabled(self) -> bool:
++        """Whether global Hermes OS mode allows per-chat context injection."""
++        return self._load_hermes_os_global_mode() == "hermes_os"
++
++    def _is_hermes_os_active_for_chat(self, chat_id: str) -> bool:
++        """Check if Hermes OS is fully active (global ON + chat binding ON)."""
++        return self._hermes_os_global_enabled() and self._hermes_os_mode_for_chat(chat_id) == "on"
++
++    def _format_response_with_hermes_os_prefix(self, content: str, chat_id: str) -> str:
++        """Add 🛡️ prefix to response if Hermes OS is active for this chat.
++
++        Only adds prefix to text content, not to empty strings, command outputs
++        that already have status emojis, or media-only messages.
++        """
++        if not content:
++            return content
++        if self._is_hermes_os_active_for_chat(chat_id):
++            # Avoid double prefix if already present
++            if not content.startswith("🛡️"):
++                return f"🛡️ {content}"
++        return content
++
++    def _inject_hermes_os_mode_if_needed(self, event, history, session_key: str) -> bool:
++        """Prepend the Hermes OS context once per active session.
++
++        When a chat is marked active, we inject the Hermes OS control context
++        into the next user message unless the current transcript already
++        contains the activation marker. This keeps policy/control semantics
++        durable across gateway restarts without reviving the retired router.
++        """
++        try:
++            chat_id = str(getattr(event.source, "chat_id", "") or "")
++            if not chat_id:
++                return False
++            if not self._hermes_os_global_enabled():
++                return False
++            if self._hermes_os_mode_for_chat(chat_id) != "on":
++                return False
++
++            if history:
++                for msg in history:
++                    content = msg.get("content") if isinstance(msg, dict) else None
++                    if isinstance(content, str) and self._HERMES_OS_SKILL_MARKER in content:
++                        return False
++
++            from agent.skill_commands import build_skill_invocation_message
++
++            original_text = event.text or ""
++            injected = build_skill_invocation_message(
++                "/hermes-os",
++                original_text,
++                task_id=session_key,
++                runtime_note=(
++                    "Hermes OS context is active for this chat. Treat Hermes OS as the "
++                    "nervous/control layer for policy, memory, facts, learning, and controlled actions; "
++                    "direct execution remains the default. Do not auto-route normal messages. "
++                    "Fleet, thClaws and OMX are execution limbs/adapters and must run only through explicit commands or policy-approved action paths. "
++                    "thClaws and OMX are execution limbs, not the core body."
++                ),
++            )
++            if not injected:
++                return False
++            event.text = injected
++            return True
++        except Exception as e:
++            logger.debug("Hermes OS mode injection failed: %s", e)
++            return False
++
+     # -----------------------------------------------------------------
+ 
+     def _flush_memories_for_session(
+@@ -2574,6 +2699,21 @@ class GatewayRunner:
+                     del self._running_agents[_quick_key]
+                 return await self._handle_reset_command(event)
+ 
++            # /hermes-os must also bypass the running-agent guard so it can
++            # enter Hermes OS mode immediately instead of being queued as user
++            # text.  Clear any pending turn before switching modes.
++            if _cmd_def_inner and _cmd_def_inner.name == "hermes-os":
++                running_agent = self._running_agents.get(_quick_key)
++                if running_agent and running_agent is not _AGENT_PENDING_SENTINEL:
++                    running_agent.interrupt("Hermes OS mode requested")
++                adapter = self.adapters.get(source.platform)
++                if adapter and hasattr(adapter, 'get_pending_message'):
++                    adapter.get_pending_message(_quick_key)  # consume and discard
++                self._pending_messages.pop(_quick_key, None)
++                if _quick_key in self._running_agents:
++                    del self._running_agents[_quick_key]
++                return await self._handle_hermes_os_command(event)
++
+             # /queue <prompt> — queue without interrupting
+             if event.get_command() in ("queue", "q"):
+                 queued_text = event.get_command_args().strip()
+@@ -2748,23 +2888,6 @@ class GatewayRunner:
+         if canonical == "insights":
+             return await self._handle_insights_command(event)
+ 
+-        if canonical == "gpts":
+-            return await self._handle_gpts_command(event)
+-
+-        if canonical == "gemini-cli":
+-            gemini_result = await self._handle_gemini_cli_command(event)
+-            if gemini_result is not None:
+-                return gemini_result
+-            command = None
+-            canonical = None
+-
+-        if canonical == "gemini-research":
+-            gemini_result = await self._handle_gemini_research_command(event)
+-            if gemini_result is not None:
+-                return gemini_result
+-            command = None
+-            canonical = None
+-
+         if canonical == "reload-mcp":
+             return await self._handle_reload_mcp_command(event)
+ 
+@@ -2780,6 +2903,21 @@ class GatewayRunner:
+         if canonical == "debug":
+             return await self._handle_debug_command(event)
+ 
++        if canonical == "gemini-cli":
++            return await self._handle_gemini_cli_command(event)
++
++        if canonical == "gemini-research":
++            return await self._handle_gemini_research_command(event)
++
++        if canonical == "hermes-memory-graph":
++            return await self._handle_memory_graph_command(event)
++
++        if canonical == "checkpoint":
++            return await self._handle_checkpoint_command(event)
++
++        if canonical == "hermes-os":
++            return await self._handle_hermes_os_command(event)
++
+         if canonical == "title":
+             return await self._handle_title_command(event)
+ 
+@@ -2801,9 +2939,6 @@ class GatewayRunner:
+         if canonical == "voice":
+             return await self._handle_voice_command(event)
+ 
+-        if canonical == "hermes-memory-graph":
+-            return await self._handle_memory_graph_command(event)
+-
+         if self._draining:
+             return f"⏳ Gateway is {self._status_action_gerund()} and is not accepting new work right now."
+ 
+@@ -3261,6 +3396,11 @@ class GatewayRunner:
+ 
+         # Load conversation history from transcript
+         history = self.session_store.load_transcript(session_entry.session_id)
++
++        # Hermes OS mode: if this chat was activated via /hermes-os, inject the
++        # Hermes OS skill once into the transcript so the conversation stays in
++        # Hermes OS mode until the session resets or the user turns it off.
++        self._inject_hermes_os_mode_if_needed(event, history, session_key)
+         
+         # -----------------------------------------------------------------
+         # Session hygiene: auto-compress pathologically large transcripts
+@@ -3815,6 +3955,13 @@ class GatewayRunner:
+                         )
+                 return None
+ 
++            # ── Hermes OS emoji prefix ───────────────────────
++            # Add 🛡️ prefix to response if Hermes OS context is active for this chat.
++            response = self._format_response_with_hermes_os_prefix(
++                response,
++                str(getattr(source, "chat_id", "") or "")
++            )
++
+             return response
+             
+         except Exception as e:
+@@ -4095,78 +4242,6 @@ class GatewayRunner:
+ 
+         return "\n".join(lines)
+ 
+-    async def _handle_gemini_cli_command(self, event: MessageEvent) -> Optional[str]:
+-        """Run Gemini CLI when available; otherwise fall back to Hermes OS."""
+-        from hermes_cli.gemini_cli import (
+-            build_gemini_cli_args,
+-            parse_gemini_cli_request,
+-            resolve_gemini_cli_binary,
+-        )
+-
+-        request = parse_gemini_cli_request(event.get_command_args().strip())
+-        if not request.prompt:
+-            return "Usage: /gemini-cli [--model <name>] <prompt>"
+-
+-        binary = resolve_gemini_cli_binary()
+-        timeout = float(os.getenv("HERMES_GEMINI_CLI_TIMEOUT_SECONDS", "120"))
+-        reason = "gemini binary not found"
+-
+-        if binary:
+-            try:
+-                proc = await asyncio.create_subprocess_exec(
+-                    binary,
+-                    *build_gemini_cli_args(request.prompt, request.model),
+-                    stdout=asyncio.subprocess.PIPE,
+-                    stderr=asyncio.subprocess.PIPE,
+-                )
+-                stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
+-                stdout_text = (stdout or b"").decode(errors="replace").strip()
+-                stderr_text = (stderr or b"").decode(errors="replace").strip()
+-                output = stdout_text or stderr_text
+-                if proc.returncode == 0:
+-                    return output or "Gemini CLI returned no output."
+-                reason = stderr_text or stdout_text or f"gemini exited {proc.returncode}"
+-            except asyncio.TimeoutError:
+-                reason = f"gemini timed out after {timeout}s"
+-            except FileNotFoundError:
+-                reason = "gemini binary not executable"
+-            except Exception as exc:  # pragma: no cover - defensive guard
+-                reason = str(exc)
+-
+-        logger.info(
+-            "Gemini CLI unavailable for /gemini-cli; routing to Hermes OS fallback: %s",
+-            reason,
+-        )
+-        event.text = request.prompt
+-        return None
+-
+-    async def _handle_gemini_research_command(self, event: MessageEvent) -> Optional[str]:
+-        """Run the Hermes → Gemini → Hermes research workflow."""
+-        from hermes_cli.gemini_workflow import format_gemini_workflow_result, parse_gemini_research_request, run_gemini_research_workflow
+-
+-        request = parse_gemini_research_request(event.get_command_args().strip())
+-        if not request.question or not request.evidence:
+-            return "Usage: /gemini-research --question <question> --evidence <evidence> [--model <name>]"
+-
+-        result = run_gemini_research_workflow(request.question, request.evidence, model=request.model)
+-        text = format_gemini_workflow_result(result)
+-        if result.available:
+-            text = f"{text}\n\nVerification prompt:\n{result.verification_prompt}"
+-        else:
+-            text = f"{text}\n\nFallback prompt:\n{result.fallback_prompt}"
+-        return text
+-
+-    async def _handle_memory_graph_command(self, event: MessageEvent) -> str:
+-        """Handle /hermes-memory-graph — start or report the live dashboard."""
+-        from hermes_cli.memory_graph import ensure_memory_graph_ready, format_memory_graph_message
+-
+-        try:
+-            status = ensure_memory_graph_ready()
+-            return format_memory_graph_message(status)
+-        except Exception as e:
+-            logger.warning("[%s] Failed to open Hermes Memory Graph: %s", self.name, e, exc_info=True)
+-            return f"❌ Failed to open Hermes Memory Graph: {e}"
+-
+     async def _handle_status_command(self, event: MessageEvent) -> str:
+         """Handle /status command."""
+         source = event.source
+@@ -6391,51 +6466,6 @@ class GatewayRunner:
+             logger.error("Insights command error: %s", e, exc_info=True)
+             return f"Error generating insights: {e}"
+ 
+-    async def _handle_gpts_command(self, event: MessageEvent) -> str:
+-        """Handle /gpts command -- show real-time Codex GPT status.
+-
+-        Uses get_codex_status_via_exec() for real-time data including rate limits.
+-        Supports --compare flag to show Plan A/B/C comparison.
+-        """
+-        import asyncio as _asyncio
+-
+-        args = event.get_command_args().strip()
+-        parts = args.split()
+-        show_compare = "--compare" in parts
+-        show_debug = "--debug" in parts
+-
+-        loop = _asyncio.get_event_loop()
+-
+-        def _get_status():
+-            from hermes_cli.codex_bridge import (
+-                get_codex_status_via_exec,
+-                get_realtime_codex_status,
+-                compare_plans,
+-                format_status_markdown,
+-                format_comparison_markdown,
+-            )
+-
+-            if show_compare:
+-                comparison = compare_plans()
+-                return format_comparison_markdown(comparison)
+-            else:
+-                # Primary: Real-time via exec (includes rate limits)
+-                # Never fall back to cached/session-only data here; stale output is worse than an explicit failure.
+-                status = get_codex_status_via_exec(timeout=60)
+-                if status is None:
+-                    return (
+-                        "🤖 **Codex GPT Status**\n\n"
+-                        "Unable to retrieve live Codex status right now.\n\n"
+-                        "Stale cached/session fallback is disabled to avoid showing old values."
+-                    )
+-                return format_status_markdown(status, show_source=False, debug=show_debug)
+-
+-        try:
+-            return await loop.run_in_executor(None, _get_status)
+-        except Exception as e:
+-            logger.error("GPTs command error: %s", e, exc_info=True)
+-            return f"Error retrieving Codex status: {e}"
+-
+     async def _handle_reload_mcp_command(self, event: MessageEvent) -> str:
+         """Handle /reload-mcp command -- disconnect and reconnect all MCP servers."""
+         loop = asyncio.get_event_loop()
+@@ -6671,6 +6701,126 @@ class GatewayRunner:
+ 
+         return await loop.run_in_executor(None, _collect_and_upload)
+ 
++    async def _handle_hermes_os_command(self, event: MessageEvent) -> str:
++        """Handle /hermes-os [on|off|status|dashboard|policy|fleet|rtk] — enter/control Hermes OS mode."""
++        import subprocess
++
++        raw_args = event.get_command_args().strip()
++        parts = raw_args.split(maxsplit=1)
++        # Root command /hermes_os (or /hermes-os) should activate Hermes OS immediately.
++        subcmd = parts[0].lower() if parts and parts[0] else "on"
++        valid_cmds = {"on", "off", "status", "dashboard", "policy", "fleet", "rtk"}
++
++        if subcmd not in valid_cmds:
++            return "Usage: /hermes-os [on|off|status|dashboard|policy|fleet|rtk]"
++
++        def _run():
++            return subprocess.run(
++                ["hermes-os", subcmd],
++                capture_output=True,
++                text=True,
++                timeout=30,
++            )
++
++        try:
++            result = await asyncio.to_thread(_run)
++            output = (result.stdout or result.stderr or "").strip()
++            chat_id = str(event.source.chat_id)
++            from hermes_cli.hermes_os_format import (
++                format_hermes_os_effective_status,
++                format_hermes_os_off_message,
++                format_hermes_os_on_message,
++                strip_ansi,
++            )
++
++            clean_output = strip_ansi(output)
++            if result.returncode == 0:
++                if subcmd == "on":
++                    self._set_hermes_os_mode(chat_id, "on")
++                    return format_hermes_os_on_message(clean_output, chat_scoped=True)
++                if subcmd == "off":
++                    self._set_hermes_os_mode(chat_id, "off")
++                    return format_hermes_os_off_message(clean_output, chat_scoped=True)
++                if subcmd == "status":
++                    mode = self._hermes_os_mode_for_chat(chat_id)
++                    global_mode = self._load_hermes_os_global_mode()
++                    status_line = format_hermes_os_effective_status(global_mode, mode)
++                    if clean_output:
++                        return f"{clean_output}\n\n{status_line}"
++                    return status_line
++                return clean_output or "✅ Done"
++            return f"❌ Error: {clean_output or 'Command failed'}"
++        except FileNotFoundError:
++            return "❌ hermes-os command not found. Is the skill installed?"
++        except subprocess.TimeoutExpired:
++            return "⏳ Command timed out after 30s"
++        except Exception as e:
++            logger.warning("[%s] /hermes-os failed: %s", self.name, e, exc_info=True)
++            return f"❌ Failed: {e}"
++
++    async def _handle_gemini_cli_command(self, event: MessageEvent) -> str | None:
++        """Handle /gemini-cli — run Gemini CLI or fall back to Hermes OS."""
++        from hermes_cli.gemini_cli import parse_gemini_cli_request, run_gemini_cli
++
++        args = event.get_command_args().strip()
++        if not args:
++            return "Usage: /gemini-cli [--model <model>] <prompt>"
++
++        request = parse_gemini_cli_request(args)
++        result = await asyncio.to_thread(run_gemini_cli, request.prompt, request.model)
++        if result.available:
++            return result.output or "✅ Done"
++
++        event.text = request.prompt
++        return None
++
++    async def _handle_gemini_research_command(self, event: MessageEvent) -> str:
++        """Handle /gemini-research — run the workflow and present the result."""
++        from hermes_cli.gemini_workflow import format_gemini_workflow_result, run_gemini_research_workflow, parse_gemini_research_request
++
++        args = event.get_command_args().strip()
++        if not args:
++            return "Usage: /gemini-research --question <q> --evidence <e> [--model <model>]"
++
++        request = parse_gemini_research_request(args)
++        result = await asyncio.to_thread(
++            run_gemini_research_workflow,
++            request.question,
++            request.evidence,
++            request.model,
++        )
++        return format_gemini_workflow_result(result)
++
++    async def _handle_memory_graph_command(self, event: MessageEvent) -> str:
++        """Handle /hermes-memory-graph — open Hermes Memory Graph status/dashboard."""
++        from hermes_cli.memory_graph import ensure_memory_graph_ready, format_memory_graph_message
++
++        try:
++            status = await asyncio.to_thread(ensure_memory_graph_ready)
++            return format_memory_graph_message(status)
++        except FileNotFoundError as e:
++            return f"❌ Failed to open Hermes Memory Graph: {e}"
++        except Exception as e:
++            logger.warning("[%s] /hermes-memory-graph failed: %s", self.name, e, exc_info=True)
++            return f"❌ Failed to open Hermes Memory Graph: {e}"
++
++    async def _handle_checkpoint_command(self, event: MessageEvent) -> str:
++        """Handle /checkpoint — evaluate the go/no-go checkpoint gate."""
++        from hermes_cli.checkpoint_gate import (
++            checkpoint_usage,
++            format_checkpoint_result,
++            parse_checkpoint_request,
++            run_checkpoint_gate,
++        )
++
++        args = event.get_command_args().strip()
++        if not args:
++            return checkpoint_usage()
++
++        request = parse_checkpoint_request(args)
++        result = run_checkpoint_gate(request)
++        return format_checkpoint_result(result)
++
+     async def _handle_update_command(self, event: MessageEvent) -> str:
+         """Handle /update command — update Hermes Agent to the latest version.
+ 
+diff --git a/sources/hermes-agent/hermes_cli/commands.py b/sources/hermes-agent/hermes_cli/commands.py
+index cc7f39d..48f7a6e 100644
+--- a/sources/hermes-agent/hermes_cli/commands.py
++++ b/sources/hermes-agent/hermes_cli/commands.py
+@@ -90,8 +90,12 @@ COMMAND_REGISTRY: list[CommandDef] = [
+     CommandDef("profile", "Show active profile name and home directory", "Info"),
+     CommandDef("sethome", "Set this chat as the home channel", "Session",
+                gateway_only=True, aliases=("set-home",)),
++    CommandDef("sessions", "Browse recent sessions (interactive list)", "Session",
++               aliases=("ss",)),
+     CommandDef("resume", "Resume a previously-named session", "Session",
+                args_hint="[name]"),
++    CommandDef("continue", "Resume the most recent session (no args needed)", "Session",
++               aliases=("c",)),
+ 
+     # Configuration
+     CommandDef("config", "Show current configuration", "Configuration",
+@@ -134,13 +138,9 @@ COMMAND_REGISTRY: list[CommandDef] = [
+     CommandDef("reload", "Reload .env variables into the running session", "Tools & Skills"),
+     CommandDef("reload-mcp", "Reload MCP servers from config", "Tools & Skills",
+                aliases=("reload_mcp",)),
+-    CommandDef("browser", "Connect browser tools to your live Chrome via CDP",
+-               "Tools & Skills", cli_only=True, args_hint="[connect|disconnect|status]",
++    CommandDef("browser", "Connect browser tools to your live Chrome via CDP", "Tools & Skills",
++               cli_only=True, args_hint="[connect|disconnect|status]",
+                subcommands=("connect", "disconnect", "status")),
+-    CommandDef("gemini-cli", "Run Gemini CLI when available; fall back to Hermes OS when unavailable",
+-               "Tools & Skills", aliases=("gemini_cli",), args_hint="<prompt>"),
+-    CommandDef("gemini-research", "Run the Hermes → Gemini → Hermes workflow for evidence-backed research",
+-               "Tools & Skills", aliases=("gemini_research",), args_hint="--question <q> --evidence <e> [--model <name>]"),
+     CommandDef("plugins", "List installed plugins and their status",
+                "Tools & Skills", cli_only=True),
+ 
+@@ -151,8 +151,6 @@ COMMAND_REGISTRY: list[CommandDef] = [
+     CommandDef("restart", "Gracefully restart the gateway after draining active runs", "Session",
+                gateway_only=True),
+     CommandDef("usage", "Show token usage and rate limits for the current session", "Info"),
+-    CommandDef("gpts", "Show real-time Codex GPT status", "Info",
+-               aliases=("gpt-status",), args_hint="[--compare]"),
+     CommandDef("insights", "Show usage insights and analytics", "Info",
+                args_hint="[days]"),
+     CommandDef("platforms", "Show gateway/messaging platform status", "Info",
+@@ -164,8 +162,16 @@ COMMAND_REGISTRY: list[CommandDef] = [
+     CommandDef("update", "Update Hermes Agent to the latest version", "Info",
+                gateway_only=True),
+     CommandDef("debug", "Upload debug report (system info + logs) and get shareable links", "Info"),
+-    CommandDef("hermes-memory-graph", "Open Hermes Memory Graph dashboard and return the public link", "Info",
++    CommandDef("gemini-cli", "Run Gemini CLI and fall back to Hermes OS when unavailable", "Info",
++               aliases=("gemini_cli",), args_hint="[--model <model>] <prompt>"),
++    CommandDef("gemini-research", "Run a Hermes → Gemini → Hermes verification workflow", "Info",
++               aliases=("gemini_research",), args_hint="[--question ... --evidence ... --model ...]"),
++    CommandDef("hermes-memory-graph", "Open Hermes Memory Graph dashboard and show status", "Info",
+                aliases=("hermes_memory_graph",)),
++    CommandDef("checkpoint", "Run the go/no-go checkpoint gate (GO, HOLD, or REDIRECT)", "Session",
++               args_hint="[--goal ... --current ... --evidence ... --alternatives ...]"),
++    CommandDef("hermes-os", "Enter and control Hermes OS mode - on/off/status/dashboard/policy/fleet/rtk", "Info",
++               aliases=("hermes_os",), args_hint="[on|off|status|dashboard|policy|fleet|rtk]"),
+ 
+     # Exit
+     CommandDef("quit", "Exit the CLI", "Exit",
+diff --git a/sources/hermes-agent/hermes_cli/hermes_os_format.py b/sources/hermes-agent/hermes_cli/hermes_os_format.py
+new file mode 100644
+index 0000000..55a20b9
+--- /dev/null
++++ b/sources/hermes-agent/hermes_cli/hermes_os_format.py
+@@ -0,0 +1,107 @@
++"""Shared Hermes OS user-facing message formatting.
++
++Keep CLI and messaging gateway wording aligned for Hermes OS control commands.
++"""
++
++from __future__ import annotations
++
++import re
++
++_ANSI_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
++
++
++def strip_ansi(text: str) -> str:
++    """Remove terminal ANSI color/control sequences from launcher output."""
++    return _ANSI_RE.sub("", text or "").strip()
++
++
++def _evidence_block(output: str) -> list[str]:
++    clean = strip_ansi(output)
++    if not clean:
++        return []
++    lines = ["", "📎 **Launcher evidence**"]
++    for line in clean.splitlines():
++        line = line.strip()
++        if line:
++            lines.append(f"  • {line}")
++    return lines
++
++
++def format_hermes_os_on_message(output: str = "", *, chat_scoped: bool = True) -> str:
++    """Format Hermes OS activation/context-binding message."""
++    scope = "for this chat" if chat_scoped else ""
++    lines = [
++        "🛰️ **Hermes OS Context**",
++        "━━━━━━━━━━━━━━━━━━━━━",
++        f"✅ **Status:** Hermes OS context active {scope}".rstrip(),
++        "🧠 **Role:** nervous/control layer for policy, memory, facts, learning, and controlled actions",
++        "⚡ **Execution:** Direct execution remains the default",
++        "🚀 **Fleet:** Fleet runs only on explicit /fleet or /hermes_os fleet commands",
++        "🦾 **Limbs:** thClaws / OMX / Fleet adapters — not the core body",
++        "🔒 **Policy:** RTK-first + UTC+7 + Evidence-first",
++        "",
++        "🤖 **Ready:** Boss น้องเมส พร้อมทำงานใน Hermes OS context แล้วค่ะ",
++    ]
++    lines.extend(_evidence_block(output))
++    return "\n".join(lines)
++
++
++def format_hermes_os_off_message(output: str = "", *, chat_scoped: bool = True) -> str:
++    """Format Hermes OS context disable message."""
++    scope = "for this chat" if chat_scoped else ""
++    lines = [
++        "🛰️ **Hermes OS Context**",
++        "━━━━━━━━━━━━━━━━━━━━━",
++        f"🛑 **Status:** Hermes OS mode disabled {scope}".rstrip(),
++        "⚡ **Execution:** Standard Hermes direct path remains available",
++        "🔁 **Re-enable:** `/hermes_os` or `/hermes-os on`",
++    ]
++    lines.extend(_evidence_block(output))
++    return "\n".join(lines)
++
++
++def format_hermes_os_chat_status_note(active: bool) -> str:
++    """Format chat-scoped context-binding note appended to status output."""
++    if active:
++        return "\n".join([
++            "💬 **Chat Context Binding**",
++            "━━━━━━━━━━━━━━━━━━━━━",
++            "✅ Hermes OS context is active for this chat.",
++            "⚡ Direct execution remains the default.",
++            "🚀 Fleet runs only on explicit /fleet or /hermes_os fleet commands.",
++        ])
++    return "\n".join([
++        "💬 **Chat Context Binding**",
++        "━━━━━━━━━━━━━━━━━━━━━",
++        "⚪ Hermes OS context is not active for this chat.",
++        "🔁 Activate with `/hermes_os` or `/hermes-os on`.",
++    ])
++
++
++def format_hermes_os_effective_status(global_mode: str, chat_mode: str) -> str:
++    """Format combined global + chat Hermes OS effective status."""
++    global_on = global_mode == "hermes_os"
++    chat_on = chat_mode == "on"
++    if global_on and chat_on:
++        effective = "ACTIVE"
++        marker = "✅"
++        detail = "Hermes OS context can be injected for this chat."
++    elif not global_on:
++        effective = "BLOCKED by global mode"
++        marker = "🛡️"
++        detail = "Fail-closed: global mode blocks chat context injection."
++    else:
++        effective = "INACTIVE for this chat"
++        marker = "⚪"
++        detail = "Hermes OS context is not active for this chat."
++
++    return "\n".join([
++        "💬 **Hermes OS Context Binding**",
++        "━━━━━━━━━━━━━━━━━━━━━",
++        f"🌐 Global mode: {'ON' if global_on else 'OFF'} (`{global_mode}`)",
++        f"💬 This chat: {'ON' if chat_on else 'OFF'} (`{chat_mode}`)",
++        f"{marker} Effective context: {effective}",
++        f"🧭 Meaning: {detail}",
++        "⚡ **Execution:** Direct Hermes path remains default",
++        "🚀 **Fleet:** Explicit /fleet or /hermes_os fleet only",
++    ])
+diff --git a/sources/hermes-agent/hermes_cli/main.py b/sources/hermes-agent/hermes_cli/main.py
+index 97281d5..bbf0feb 100644
+--- a/sources/hermes-agent/hermes_cli/main.py
++++ b/sources/hermes-agent/hermes_cli/main.py
+@@ -4509,6 +4509,13 @@ def cmd_logs(args):
+ 
+ def main():
+     """Main entry point for hermes CLI."""
++    try:
++        from hermes_cli.policy_gate import assert_merged_policy_gate
++        assert_merged_policy_gate()
++    except Exception as exc:
++        print(f"Error: merged policy hard gate failed: {exc}", file=sys.stderr)
++        sys.exit(1)
++
+     parser = argparse.ArgumentParser(
+         prog="hermes",
+         description="Hermes Agent - AI assistant with tool-calling capabilities",
+diff --git a/sources/hermes-agent/tests/tools/test_hermes_backup_freshness_gate.py b/sources/hermes-agent/tests/tools/test_hermes_backup_freshness_gate.py
+new file mode 100644
+index 0000000..5e5b142
+--- /dev/null
++++ b/sources/hermes-agent/tests/tools/test_hermes_backup_freshness_gate.py
+@@ -0,0 +1,138 @@
++import json
++from pathlib import Path
++
++from tools.hermes_backup_freshness_gate import evaluate_backup_freshness, main
++
++
++def _write(path: Path, text: str = "content") -> None:
++    path.parent.mkdir(parents=True, exist_ok=True)
++    path.write_text(text, encoding="utf-8")
++
++
++def _seed_minimal_tree(root: Path, files: list[str], *, prefix: str = "") -> None:
++    for rel in files:
++        _write(root / prefix / rel, f"{rel}\n")
++
++
++def test_evaluate_backup_freshness_blocks_when_backup_lacks_policy_files(tmp_path):
++    tracked = [
++        "cli.py",
++        "hermes_cli/hermes_os_format.py",
++        "website/docs/reference/merged-hard-gate-policy.yaml",
++        "tools/merged_policy_validator.py",
++    ]
++    dev = tmp_path / "dev"
++    live = tmp_path / "live"
++    backup = tmp_path / "backup"
++    _seed_minimal_tree(dev, tracked)
++    _seed_minimal_tree(live, tracked)
++    _seed_minimal_tree(backup, ["cli.py"], prefix="sources/hermes-agent")
++    _write(backup / "restore" / "MANIFEST.json", json.dumps({"repo_url": "test"}))
++
++    report = evaluate_backup_freshness(
++        backup_root=backup,
++        dev_root=dev,
++        live_root=live,
++        tracked_files=tracked,
++        repo_meta={"clone_ok": None, "source": "test"},
++    )
++
++    assert report["backup_fresh"] is False
++    assert report["blocking"] is True
++    assert report["risk"] == "HIGH"
++    assert report["missing_from_backup"] == tracked[1:]
++    assert "backup_missing_tracked_files" in report["blocking_reasons"]
++
++
++def test_evaluate_backup_freshness_blocks_when_live_runtime_lacks_policy_files(tmp_path):
++    tracked = ["cli.py", "tools/merged_policy_validator.py"]
++    dev = tmp_path / "dev"
++    live = tmp_path / "live"
++    backup = tmp_path / "backup"
++    _seed_minimal_tree(dev, tracked)
++    _seed_minimal_tree(live, ["cli.py"])
++    _seed_minimal_tree(backup, tracked, prefix="sources/hermes-agent")
++    _write(backup / "restore" / "MANIFEST.json", json.dumps({"repo_url": "test"}))
++
++    report = evaluate_backup_freshness(
++        backup_root=backup,
++        dev_root=dev,
++        live_root=live,
++        tracked_files=tracked,
++        repo_meta={"clone_ok": None, "source": "test"},
++    )
++
++    assert report["backup_fresh"] is False
++    assert report["blocking"] is True
++    assert report["risk"] == "HIGH"
++    assert report["missing_from_live_runtime"] == ["tools/merged_policy_validator.py"]
++    assert "live_runtime_missing_tracked_files" in report["blocking_reasons"]
++
++
++def test_evaluate_backup_freshness_passes_when_all_hashes_match(tmp_path):
++    tracked = ["cli.py", "hermes_cli/hermes_os_format.py"]
++    dev = tmp_path / "dev"
++    live = tmp_path / "live"
++    backup = tmp_path / "backup"
++    _seed_minimal_tree(dev, tracked)
++    _seed_minimal_tree(live, tracked)
++    _seed_minimal_tree(backup, tracked, prefix="sources/hermes-agent")
++    _write(backup / "restore" / "MANIFEST.json", json.dumps({"repo_url": "test"}))
++
++    report = evaluate_backup_freshness(
++        backup_root=backup,
++        dev_root=dev,
++        live_root=live,
++        tracked_files=tracked,
++        repo_meta={"clone_ok": None, "source": "test"},
++    )
++
++    assert report["backup_fresh"] is True
++    assert report["blocking"] is False
++    assert report["risk"] == "LOW"
++    assert report["missing_from_backup"] == []
++    assert report["hash_mismatches"] == []
++
++
++def test_cli_writes_json_report_and_returns_blocking_code(tmp_path, capsys):
++    tracked_files = [
++        "cli.py",
++        "hermes_cli/main.py",
++        "hermes_cli/commands.py",
++        "gateway/run.py",
++        "gateway/platforms/base.py",
++        "agent/skill_commands.py",
++        "model_tools.py",
++        "toolsets.py",
++        "hermes_cli/hermes_os_format.py",
++        "website/docs/reference/merged-hard-gate-policy.yaml",
++        "website/docs/reference/merged-hard-gate-policy.schema.json",
++        "website/docs/reference/merged-hard-gate-policy-card.md",
++        "tools/merged_policy_validator.py",
++    ]
++    dev = tmp_path / "dev"
++    live = tmp_path / "live"
++    backup = tmp_path / "backup"
++    _seed_minimal_tree(dev, tracked_files)
++    _seed_minimal_tree(live, tracked_files)
++    _seed_minimal_tree(backup, tracked_files[:-1], prefix="sources/hermes-agent")
++    _write(backup / "restore" / "MANIFEST.json", json.dumps({"repo_url": "test"}))
++    out = tmp_path / "report.json"
++
++    exit_code = main([
++        "--backup-root",
++        str(backup),
++        "--dev-root",
++        str(dev),
++        "--live-root",
++        str(live),
++        "--output",
++        str(out),
++    ])
++
++    captured = capsys.readouterr()
++    report = json.loads(out.read_text(encoding="utf-8"))
++    assert exit_code == 1
++    assert report["blocking"] is True
++    assert report["missing_from_backup"] == ["tools/merged_policy_validator.py"]
++    assert json.loads(captured.out)["risk"] == "HIGH"
+diff --git a/sources/hermes-agent/tools/hermes_backup_freshness_gate.py b/sources/hermes-agent/tools/hermes_backup_freshness_gate.py
+new file mode 100644
+index 0000000..e545999
+--- /dev/null
++++ b/sources/hermes-agent/tools/hermes_backup_freshness_gate.py
+@@ -0,0 +1,262 @@
++#!/usr/bin/env python3
++"""Hermes OS GitHub backup freshness gate.
++
++Checks whether the restore snapshot repository contains the current Hermes OS
++protected files and whether its hashes match the local dev/runtime sources.
++This gate is intentionally read-only: it never pushes or mutates the backup.
++"""
++from __future__ import annotations
++
++import argparse
++import hashlib
++import json
++import os
++import shutil
++import subprocess
++import sys
++import tempfile
++from dataclasses import dataclass
++from datetime import datetime
++from pathlib import Path
++from typing import Any
++from zoneinfo import ZoneInfo
++
++DEFAULT_REPO_URL = "https://github.com/hanumanf3310/Hermes-os.git"
++DEFAULT_DEV_ROOT = Path("/home/hanuman3310/hermes-agent")
++DEFAULT_LIVE_ROOT = Path("/home/hanuman3310/.hermes/hermes-agent")
++BACKUP_SOURCE_PREFIX = Path("sources/hermes-agent")
++
++PROTECTED_FILES = [
++    "cli.py",
++    "hermes_cli/main.py",
++    "hermes_cli/commands.py",
++    "gateway/run.py",
++    "gateway/platforms/base.py",
++    "agent/skill_commands.py",
++    "model_tools.py",
++    "toolsets.py",
++    "hermes_cli/hermes_os_format.py",
++]
++
++POLICY_FILES = [
++    "website/docs/reference/merged-hard-gate-policy.yaml",
++    "website/docs/reference/merged-hard-gate-policy.schema.json",
++    "website/docs/reference/merged-hard-gate-policy-card.md",
++    "tools/merged_policy_validator.py",
++]
++
++DEFAULT_TRACKED_FILES = PROTECTED_FILES + POLICY_FILES
++
++
++@dataclass(frozen=True)
++class GitInfo:
++    head: str | None
++    branch: str | None
++    dirty_count: int | None
++
++
++def _run(cmd: list[str], cwd: Path | None = None, timeout: int = 120) -> subprocess.CompletedProcess[str]:
++    return subprocess.run(
++        cmd,
++        cwd=str(cwd) if cwd else None,
++        text=True,
++        stdout=subprocess.PIPE,
++        stderr=subprocess.PIPE,
++        timeout=timeout,
++        check=False,
++    )
++
++
++def _git_info(path: Path) -> GitInfo:
++    if not (path / ".git").exists():
++        return GitInfo(head=None, branch=None, dirty_count=None)
++    head = _run(["git", "rev-parse", "HEAD"], cwd=path).stdout.strip() or None
++    branch = _run(["git", "branch", "--show-current"], cwd=path).stdout.strip() or None
++    status = _run(["git", "status", "--short"], cwd=path).stdout.splitlines()
++    return GitInfo(head=head, branch=branch, dirty_count=len(status))
++
++
++def _sha256(path: Path) -> str | None:
++    if not path.exists() or not path.is_file():
++        return None
++    h = hashlib.sha256()
++    with path.open("rb") as fh:
++        for chunk in iter(lambda: fh.read(1024 * 1024), b""):
++            h.update(chunk)
++    return h.hexdigest()
++
++
++def _clone_backup(repo_url: str, tmp_parent: Path) -> tuple[Path | None, dict[str, Any]]:
++    clone_path = tmp_parent / "Hermes-os"
++    proc = _run(["git", "clone", "--depth", "1", repo_url, str(clone_path)], timeout=240)
++    meta: dict[str, Any] = {
++        "repo_url": repo_url,
++        "clone_ok": proc.returncode == 0,
++        "clone_stdout": proc.stdout.strip(),
++        "clone_stderr": proc.stderr.strip()[-2000:],
++    }
++    if proc.returncode != 0:
++        return None, meta
++    info = _git_info(clone_path)
++    meta.update({"head": info.head, "branch": info.branch, "dirty_count": info.dirty_count})
++    return clone_path, meta
++
++
++def _read_manifest(backup_root: Path) -> dict[str, Any] | None:
++    manifest = backup_root / "restore" / "MANIFEST.json"
++    if not manifest.exists():
++        return None
++    try:
++        return json.loads(manifest.read_text(encoding="utf-8"))
++    except Exception as exc:  # pragma: no cover - exact JSON error not important
++        return {"error": str(exc)}
++
++
++def evaluate_backup_freshness(
++    *,
++    backup_root: Path,
++    dev_root: Path = DEFAULT_DEV_ROOT,
++    live_root: Path = DEFAULT_LIVE_ROOT,
++    tracked_files: list[str] | None = None,
++    repo_meta: dict[str, Any] | None = None,
++) -> dict[str, Any]:
++    tracked = tracked_files or DEFAULT_TRACKED_FILES
++    now = datetime.now(ZoneInfo("Asia/Bangkok")).isoformat(timespec="seconds")
++
++    dev_info = _git_info(dev_root)
++    live_info = _git_info(live_root)
++    report: dict[str, Any] = {
++        "schema_version": 1,
++        "checked_at_bangkok": now,
++        "repo": repo_meta or {},
++        "dev_checkout": {"path": str(dev_root), **dev_info.__dict__},
++        "live_runtime": {"path": str(live_root), **live_info.__dict__},
++        "backup_root": str(backup_root),
++        "manifest_present": (backup_root / "restore" / "MANIFEST.json").exists(),
++        "manifest": _read_manifest(backup_root),
++        "tracked_files": tracked,
++        "files": [],
++        "missing_from_backup": [],
++        "missing_from_dev": [],
++        "missing_from_live_runtime": [],
++        "hash_mismatches": [],
++        "blocking_reasons": [],
++    }
++
++    for rel in tracked:
++        rel_path = Path(rel)
++        backup_path = backup_root / BACKUP_SOURCE_PREFIX / rel_path
++        dev_path = dev_root / rel_path
++        live_path = live_root / rel_path
++        backup_hash = _sha256(backup_path)
++        dev_hash = _sha256(dev_path)
++        live_hash = _sha256(live_path)
++        entry = {
++            "path": rel,
++            "backup_exists": backup_hash is not None,
++            "dev_exists": dev_hash is not None,
++            "live_exists": live_hash is not None,
++            "backup_sha256": backup_hash,
++            "dev_sha256": dev_hash,
++            "live_sha256": live_hash,
++            "backup_matches_dev": backup_hash is not None and backup_hash == dev_hash,
++            "backup_matches_live": backup_hash is not None and live_hash is not None and backup_hash == live_hash,
++            "dev_matches_live": dev_hash is not None and live_hash is not None and dev_hash == live_hash,
++        }
++        report["files"].append(entry)
++        if backup_hash is None:
++            report["missing_from_backup"].append(rel)
++        if dev_hash is None:
++            report["missing_from_dev"].append(rel)
++        if live_hash is None:
++            report["missing_from_live_runtime"].append(rel)
++        if backup_hash is not None and dev_hash is not None and backup_hash != dev_hash:
++            report["hash_mismatches"].append({"path": rel, "backup_vs": "dev"})
++        if backup_hash is not None and live_hash is not None and backup_hash != live_hash:
++            report["hash_mismatches"].append({"path": rel, "backup_vs": "live_runtime"})
++
++    if report["missing_from_backup"]:
++        report["blocking_reasons"].append("backup_missing_tracked_files")
++    if report["missing_from_dev"]:
++        report["blocking_reasons"].append("dev_missing_tracked_files")
++    if report["missing_from_live_runtime"]:
++        report["blocking_reasons"].append("live_runtime_missing_tracked_files")
++    if report["hash_mismatches"]:
++        report["blocking_reasons"].append("tracked_file_hash_mismatch")
++    if not report["manifest_present"]:
++        report["blocking_reasons"].append("manifest_missing")
++    if report["repo"] and report["repo"].get("clone_ok") is False:
++        report["blocking_reasons"].append("backup_clone_failed")
++
++    if any(reason in report["blocking_reasons"] for reason in ("backup_clone_failed", "dev_missing_tracked_files")):
++        risk = "CRITICAL"
++    elif report["missing_from_backup"] or report["missing_from_live_runtime"]:
++        risk = "HIGH"
++    elif report["hash_mismatches"]:
++        risk = "HIGH"
++    elif report["repo"].get("dirty_count") not in (0, None):
++        risk = "MEDIUM"
++    else:
++        risk = "LOW"
++    report["risk"] = risk
++    report["backup_fresh"] = risk == "LOW"
++    report["blocking"] = risk in {"HIGH", "CRITICAL"}
++    return report
++
++
++def build_report(args: argparse.Namespace) -> dict[str, Any]:
++    dev_root = Path(args.dev_root).expanduser().resolve()
++    live_root = Path(args.live_root).expanduser().resolve()
++    if args.backup_root:
++        backup_root = Path(args.backup_root).expanduser().resolve()
++        repo_meta = {"repo_url": args.repo_url, "clone_ok": None, "source": "local_backup_root"}
++        return evaluate_backup_freshness(
++            backup_root=backup_root,
++            dev_root=dev_root,
++            live_root=live_root,
++            repo_meta=repo_meta,
++        )
++
++    with tempfile.TemporaryDirectory(prefix="hermes-backup-freshness-") as tmp:
++        backup_root, repo_meta = _clone_backup(args.repo_url, Path(tmp))
++        if backup_root is None:
++            report = evaluate_backup_freshness(
++                backup_root=Path(tmp) / "Hermes-os",
++                dev_root=dev_root,
++                live_root=live_root,
++                repo_meta=repo_meta,
++            )
++            report["risk"] = "CRITICAL"
++            report["backup_fresh"] = False
++            report["blocking"] = True
++            return report
++        return evaluate_backup_freshness(
++            backup_root=backup_root,
++            dev_root=dev_root,
++            live_root=live_root,
++            repo_meta=repo_meta,
++        )
++
++
++def main(argv: list[str] | None = None) -> int:
++    parser = argparse.ArgumentParser(description="Check Hermes-os GitHub backup freshness.")
++    parser.add_argument("--repo-url", default=DEFAULT_REPO_URL)
++    parser.add_argument("--backup-root", help="Use an already cloned backup root instead of cloning.")
++    parser.add_argument("--dev-root", default=str(DEFAULT_DEV_ROOT))
++    parser.add_argument("--live-root", default=str(DEFAULT_LIVE_ROOT))
++    parser.add_argument("--output", help="Write JSON report to this path.")
++    parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON.")
++    args = parser.parse_args(argv)
++
++    report = build_report(args)
++    text = json.dumps(report, ensure_ascii=False, indent=2 if args.pretty else None, sort_keys=True)
++    if args.output:
++        out = Path(args.output).expanduser()
++        out.parent.mkdir(parents=True, exist_ok=True)
++        out.write_text(text + "\n", encoding="utf-8")
++    print(text)
++    return 1 if report.get("blocking") else 0
++
++
++if __name__ == "__main__":  # pragma: no cover
++    raise SystemExit(main())
+diff --git a/sources/hermes-agent/tools/merged_policy_validator.py b/sources/hermes-agent/tools/merged_policy_validator.py
+new file mode 100644
+index 0000000..374f3a9
+--- /dev/null
++++ b/sources/hermes-agent/tools/merged_policy_validator.py
+@@ -0,0 +1,176 @@
++"""Validation helpers for the merged hard-gate policy.
++
++This module validates the machine-readable policy file at
++``website/docs/reference/merged-hard-gate-policy.yaml`` and returns either a
++structured validation result or raises a clear error with the missing gates.
++
++The validator is intentionally small and dependency-light so it can be reused
++from tests, docs tooling, or future CLI enforcement code.
++"""
++
++from __future__ import annotations
++
++from dataclasses import dataclass
++from pathlib import Path
++from typing import Any, Dict, List, Optional
++
++import sys
++
++import yaml
++
++DEFAULT_POLICY_PATH = Path(__file__).resolve().parents[1] / "website" / "docs" / "reference" / "merged-hard-gate-policy.yaml"
++
++_REQUIRED_POLICY_LAYERS = ("identity", "evidence", "terminal", "memory", "skills", "conflicts", "checkpoints")
++_REQUIRED_LABELS = ("Verified", "Inferred", "Blocked", "Needs confirmation")
++
++
++class PolicyValidationError(ValueError):
++    """Raised when the merged policy file is malformed or incomplete."""
++
++    def __init__(self, errors: List[str]):
++        self.errors = list(errors)
++        super().__init__("; ".join(self.errors))
++
++
++@dataclass(frozen=True)
++class PolicyValidationResult:
++    valid: bool
++    errors: List[str]
++    policy: Optional[Dict[str, Any]]
++
++
++def load_policy_file(path: Path = DEFAULT_POLICY_PATH) -> Dict[str, Any]:
++    """Load and parse the policy YAML file."""
++    try:
++        with path.open("r", encoding="utf-8") as fh:
++            data = yaml.safe_load(fh) or {}
++    except yaml.YAMLError as exc:
++        raise PolicyValidationError([f"Invalid YAML in {path}: {exc}"]) from exc
++    except OSError as exc:
++        raise PolicyValidationError([f"Failed to read policy file {path}: {exc}"]) from exc
++
++    if not isinstance(data, dict):
++        raise PolicyValidationError(["policy root must be a mapping"])
++    return data
++
++
++def _require_mapping(errors: List[str], policy: Dict[str, Any], key: str, parent: str = "") -> Dict[str, Any]:
++    full_key = f"{parent}.{key}" if parent else key
++    value = policy.get(key)
++    if not isinstance(value, dict):
++        errors.append(f"{full_key} is required and must be a mapping")
++        return {}
++    return value
++
++
++def _require_list(errors: List[str], policy: Dict[str, Any], key: str, parent: str = "") -> List[Any]:
++    full_key = f"{parent}.{key}" if parent else key
++    value = policy.get(key)
++    if not isinstance(value, list):
++        errors.append(f"{full_key} is required and must be a list")
++        return []
++    return value
++
++
++def _require_bool(errors: List[str], policy: Dict[str, Any], key: str, expected: Optional[bool] = None, parent: str = "") -> None:
++    full_key = f"{parent}.{key}" if parent else key
++    value = policy.get(key)
++    if not isinstance(value, bool):
++        errors.append(f"{full_key} is required and must be a boolean")
++        return
++    if expected is not None and value is not expected:
++        errors.append(f"{full_key} must be {expected}")
++
++
++def validate_policy(policy: Dict[str, Any]) -> List[str]:
++    """Return a list of validation errors for *policy*."""
++    errors: List[str] = []
++
++    if policy.get("version") != 1:
++        errors.append("version must be 1")
++    if not isinstance(policy.get("name"), str) or not policy["name"].strip():
++        errors.append("name is required and must be a non-empty string")
++    if not isinstance(policy.get("purpose"), str) or not policy["purpose"].strip():
++        errors.append("purpose is required and must be a non-empty string")
++    _require_bool(errors, policy, "source_of_truth", expected=True)
++
++    owner = _require_mapping(errors, policy, "owner")
++    if owner:
++        if not isinstance(owner.get("user_label"), str) or owner["user_label"].strip() != "Boss":
++            errors.append("owner.user_label must be 'Boss'")
++        if not isinstance(owner.get("assistant_label"), str) or owner["assistant_label"].strip() != "น้องเมส":
++            errors.append("owner.assistant_label must be 'น้องเมส'")
++
++    policy_layers = _require_mapping(errors, policy, "policy_layers")
++    if policy_layers:
++        for key in _REQUIRED_POLICY_LAYERS:
++            value = policy_layers.get(key)
++            if not isinstance(value, list) or not value:
++                errors.append(f"policy_layers.{key} is required and must be a non-empty list")
++
++    labels = _require_mapping(errors, policy, "labels")
++    if labels:
++        required_outputs = _require_list(errors, labels, "required_for_outputs", parent="labels")
++        if required_outputs and [str(item) for item in required_outputs] != list(_REQUIRED_LABELS):
++            errors.append(
++                "labels.required_for_outputs must be exactly [Verified, Inferred, Blocked, Needs confirmation]"
++            )
++
++    enforcement = _require_mapping(errors, policy, "enforcement")
++    if enforcement:
++        claims = _require_mapping(errors, enforcement, "claims", parent="enforcement")
++        if claims:
++            _require_bool(errors, claims, "verified_only_when_evidenced", expected=True, parent="enforcement.claims")
++
++        terminal = _require_mapping(errors, enforcement, "terminal", parent="enforcement")
++        if terminal:
++            _require_bool(errors, terminal, "require_rtk_wrapper", expected=True, parent="enforcement.terminal")
++
++        memory = _require_mapping(errors, enforcement, "memory", parent="enforcement")
++        if memory:
++            _require_bool(errors, memory, "require_two_round_confirmation", expected=True, parent="enforcement.memory")
++
++        skills = _require_mapping(errors, enforcement, "skills", parent="enforcement")
++        if skills:
++            _require_bool(errors, skills, "require_reuse_then_patch_before_create", expected=True, parent="enforcement.skills")
++            _require_bool(errors, skills, "require_registry_and_category", expected=True, parent="enforcement.skills")
++
++        conflicts = _require_mapping(errors, enforcement, "conflicts", parent="enforcement")
++        if conflicts:
++            _require_bool(errors, conflicts, "require_stop_explain_confirm", expected=True, parent="enforcement.conflicts")
++
++    return errors
++
++
++def validate_policy_file(path: Path = DEFAULT_POLICY_PATH) -> PolicyValidationResult:
++    """Load *path* and return a structured validation result."""
++    policy = load_policy_file(path)
++    errors = validate_policy(policy)
++    return PolicyValidationResult(valid=not errors, errors=errors, policy=policy)
++
++
++def assert_policy_file_valid(path: Path = DEFAULT_POLICY_PATH) -> Dict[str, Any]:
++    """Return the policy mapping if valid, otherwise raise PolicyValidationError."""
++    result = validate_policy_file(path)
++    if not result.valid:
++        raise PolicyValidationError(result.errors)
++    return result.policy or {}
++
++
++def main(argv: Optional[List[str]] = None) -> int:
++    """CLI entry point for policy validation."""
++    args = list(argv if argv is not None else sys.argv[1:])
++    path = Path(args[0]).expanduser() if args else DEFAULT_POLICY_PATH
++    result = validate_policy_file(path)
++    if result.valid:
++        print(f"VALID: {path}")
++        return 0
++
++    print(f"INVALID: {path}")
++    for error in result.errors:
++        print(f"- {error}")
++    return 1
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git a/sources/hermes-agent/website/docs/reference/merged-hard-gate-policy-card.md b/sources/hermes-agent/website/docs/reference/merged-hard-gate-policy-card.md
+new file mode 100644
+index 0000000..95a248e
+--- /dev/null
++++ b/sources/hermes-agent/website/docs/reference/merged-hard-gate-policy-card.md
+@@ -0,0 +1,37 @@
++---
++sidebar_position: 99
++title: "Merged Hard-Gate Policy Card"
++description: "Human-readable summary of the merged hard-gate policy used by Boss and the assistant"
++---
++
++# Merged Hard-Gate Policy Card
++
++**Source of truth:** [`merged-hard-gate-policy.yaml`](./merged-hard-gate-policy.yaml)
++
++## What this policy enforces
++
++- Call the user **Boss** and use the assistant name **น้องเมส**
++- Do not claim verification without evidence
++- Treat status output as **not** live runtime evidence
++- Wrap terminal commands with **RTK-first** execution
++- Require **two-round confirmation** before writing memory
++- Reuse or patch existing skills before creating new ones
++- Create new skills only when truly necessary, with category + registry + verification
++- Stop immediately when a command conflicts with policy
++- Use `/checkpoint` as a go/no-go gate when evidence is incomplete or a loop risk appears
++- Normalize date/time-sensitive work to **Asia/Bangkok (UTC+7)** before interpreting day boundaries, filtering email/transactions, or summarizing time-based data
++- Treat UTC+7 as a **policy gate** for date/time-sensitive work
++- Do not mix rolling 24-hour windows with calendar-day summaries unless the window is explicitly labeled
++
++## Output labels
++
++Every important response should be labeled as one of:
++
++- **Verified**
++- **Inferred**
++- **Blocked**
++- **Needs confirmation**
++
++## Enforcement rule
++
++This card is for humans. The YAML file plus validator are the machine-checkable source of truth.
+diff --git a/sources/hermes-agent/website/docs/reference/merged-hard-gate-policy.schema.json b/sources/hermes-agent/website/docs/reference/merged-hard-gate-policy.schema.json
+new file mode 100644
+index 0000000..f650c46
+--- /dev/null
++++ b/sources/hermes-agent/website/docs/reference/merged-hard-gate-policy.schema.json
+@@ -0,0 +1,103 @@
++{
++  "$schema": "https://json-schema.org/draft/2020-12/schema",
++  "$id": "https://hermes.local/schemas/merged-hard-gate-policy.schema.json",
++  "title": "Merged Hard-Gate Policy",
++  "type": "object",
++  "additionalProperties": true,
++  "required": ["version", "name", "purpose", "source_of_truth", "owner", "policy_layers", "labels", "enforcement"],
++  "properties": {
++    "version": { "type": "integer", "const": 1 },
++    "name": { "type": "string", "minLength": 1 },
++    "purpose": { "type": "string", "minLength": 1 },
++    "source_of_truth": { "type": "boolean", "const": true },
++    "owner": {
++      "type": "object",
++      "additionalProperties": true,
++      "required": ["user_label", "assistant_label"],
++      "properties": {
++        "user_label": { "type": "string", "const": "Boss" },
++        "assistant_label": { "type": "string", "const": "น้องเมส" }
++      }
++    },
++    "policy_layers": {
++      "type": "object",
++      "additionalProperties": true,
++      "required": ["identity", "evidence", "terminal", "memory", "skills", "conflicts", "checkpoints"],
++      "properties": {
++        "identity": { "$ref": "#/$defs/nonEmptyRuleList" },
++        "evidence": { "$ref": "#/$defs/nonEmptyRuleList" },
++        "terminal": { "$ref": "#/$defs/nonEmptyRuleList" },
++        "memory": { "$ref": "#/$defs/nonEmptyRuleList" },
++        "skills": { "$ref": "#/$defs/nonEmptyRuleList" },
++        "conflicts": { "$ref": "#/$defs/nonEmptyRuleList" },
++        "checkpoints": { "$ref": "#/$defs/nonEmptyRuleList" }
++      }
++    },
++    "labels": {
++      "type": "object",
++      "additionalProperties": true,
++      "required": ["required_for_outputs"],
++      "properties": {
++        "required_for_outputs": {
++          "type": "array",
++          "minItems": 4,
++          "maxItems": 4,
++          "items": { "type": "string" },
++          "prefixItems": [
++            { "const": "Verified" },
++            { "const": "Inferred" },
++            { "const": "Blocked" },
++            { "const": "Needs confirmation" }
++          ]
++        }
++      }
++    },
++    "enforcement": {
++      "type": "object",
++      "additionalProperties": true,
++      "required": ["claims", "terminal", "memory", "skills", "conflicts"],
++      "properties": {
++        "claims": {
++          "type": "object",
++          "required": ["verified_only_when_evidenced"],
++          "properties": { "verified_only_when_evidenced": { "type": "boolean", "const": true } }
++        },
++        "terminal": {
++          "type": "object",
++          "required": ["require_rtk_wrapper"],
++          "properties": { "require_rtk_wrapper": { "type": "boolean", "const": true } }
++        },
++        "memory": {
++          "type": "object",
++          "required": ["require_two_round_confirmation"],
++          "properties": { "require_two_round_confirmation": { "type": "boolean", "const": true } }
++        },
++        "skills": {
++          "type": "object",
++          "required": ["require_reuse_then_patch_before_create", "require_registry_and_category"],
++          "properties": {
++            "require_reuse_then_patch_before_create": { "type": "boolean", "const": true },
++            "require_registry_and_category": { "type": "boolean", "const": true }
++          }
++        },
++        "conflicts": {
++          "type": "object",
++          "required": ["require_stop_explain_confirm"],
++          "properties": { "require_stop_explain_confirm": { "type": "boolean", "const": true } }
++        }
++      }
++    }
++  },
++  "$defs": {
++    "nonEmptyRuleList": {
++      "type": "array",
++      "minItems": 1,
++      "items": {
++        "oneOf": [
++          { "type": "string", "minLength": 1 },
++          { "type": "object", "minProperties": 1, "additionalProperties": true }
++        ]
++      }
++    }
++  }
++}
+diff --git a/sources/hermes-agent/website/docs/reference/merged-hard-gate-policy.yaml b/sources/hermes-agent/website/docs/reference/merged-hard-gate-policy.yaml
+new file mode 100644
+index 0000000..e55722e
+--- /dev/null
++++ b/sources/hermes-agent/website/docs/reference/merged-hard-gate-policy.yaml
+@@ -0,0 +1,64 @@
++version: 1
++name: merged-hard-gate-policy
++purpose: Hard-gate policy for Hermes Agent interactions
++source_of_truth: true
++owner:
++  user_label: Boss
++  assistant_label: น้องเมส
++policy_layers:
++  identity:
++    - call_user: Boss
++    - assistant_name: น้องเมส
++    - tone: "สุภาพ ชัดเจน เหมือนเลขาส่วนตัวผู้หญิง"
++    - status_style: "use explicit progress markers such as ⏳ starting... -> ✅ done"
++  evidence:
++    - rule: "Do not claim verified success without proof"
++    - rule: "Status output alone is not live evidence"
++    - rule: "For runtime/live claims, require direct process or execution evidence"
++  date_time:
++    - rule: "When a task depends on dates, times, or day boundaries, normalize to Asia/Bangkok (UTC+7) before interpreting, filtering, or summarizing"
++    - rule: "Do not mix rolling 24-hour windows with calendar-day summaries without explicitly labeling the window"
++    - rule: "For email, calendar, and transaction summaries, use UTC+7 day boundaries first so cross-day messages are not misclassified"
++  terminal:
++    - rule: "Terminal commands must use RTK-first execution"
++    - rule: "If RTK cannot be used, stop and state the bypass reason explicitly"
++  memory:
++    - rule: "Do not add new memory entries without two-round confirmation from Boss"
++    - rule: "Memory should stay pointer/index-oriented, not duplicate long prose"
++  skills:
++    - rule: "Use existing skills first"
++    - rule: "Create a new skill only when truly necessary"
++    - rule: "Before creating a new skill, verify reuse/patch options first"
++    - rule: "New skills must have a category, registry entry, and verification"
++    - rule: "Do not create duplicate or endlessly proliferating skills"
++  conflicts:
++    - rule: "If a command conflicts with policy, stop immediately"
++    - rule: "Explain the conflict clearly"
++    - rule: "Ask for explicit confirmation before proceeding"
++  checkpoints:
++    - rule: "Use /checkpoint as a go/no-go gate when evidence is incomplete, a loop risk appears, or the task needs a stop-or-continue decision"
++    - rule: "/checkpoint is separate from /rollback"
++labels:
++  required_for_outputs:
++    - Verified
++    - Inferred
++    - Blocked
++    - Needs confirmation
++enforcement:
++  claims:
++    verified_only_when_evidenced: true
++  date_time:
++    require_utc_plus_7_first: true
++    require_calendar_day_boundaries_for_daily_summaries: true
++  terminal:
++    require_rtk_wrapper: true
++  memory:
++    require_two_round_confirmation: true
++  skills:
++    require_reuse_then_patch_before_create: true
++    require_registry_and_category: true
++  conflicts:
++    require_stop_explain_confirm: true
++notes:
++  - "This file is the machine-readable policy source of truth; human-readable summaries may be derived from it."
++  - "Policy text alone is not enforcement; execution layers must read and apply these rules."
+-- 
+2.43.0
+

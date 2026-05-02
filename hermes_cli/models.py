@@ -293,6 +293,13 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
         "XiaomiMiMo/MiMo-V2-Flash",
         "moonshotai/Kimi-K2-Thinking",
     ],
+    # Ollama Launch (ollama run hermes flow) — cloud models for the cloud switcher
+    "ollama-launch": [
+        "kimi-k2.5:cloud",
+        "glm-5.1:cloud",
+        "qwen3.5:cloud",
+        "minimax-m2.7:cloud",
+    ],
 }
 
 # ---------------------------------------------------------------------------
@@ -1188,7 +1195,7 @@ def _resolve_copilot_catalog_api_key() -> str:
         return ""
 
 
-def provider_model_ids(provider: Optional[str], *, force_refresh: bool = False) -> list[str]:
+def provider_model_ids(provider: Optional[str], *, force_refresh: bool = False, api_key: Optional[str] = None) -> list[str]:
     """Return the best known model catalog for a provider.
 
     Tries live API endpoints for providers that support them (Codex, Nous),
@@ -1200,7 +1207,8 @@ def provider_model_ids(provider: Optional[str], *, force_refresh: bool = False) 
     if normalized == "openai-codex":
         from hermes_cli.codex_models import get_codex_model_ids
 
-        return get_codex_model_ids()
+        # Pass api_key for live catalog lookup (Codex parity fix)
+        return get_codex_model_ids(access_token=api_key)
     if normalized in {"copilot", "copilot-acp"}:
         try:
             live = _fetch_github_models(_resolve_copilot_catalog_api_key())
@@ -1837,7 +1845,7 @@ def validate_requested_model(
     # OpenAI Codex has its own catalog path; /v1/models probing is not the right validation path.
     if normalized == "openai-codex":
         try:
-            codex_models = provider_model_ids("openai-codex")
+            codex_models = provider_model_ids("openai-codex", api_key=api_key)
         except Exception:
             codex_models = []
         if codex_models:

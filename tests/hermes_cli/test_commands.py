@@ -68,6 +68,37 @@ class TestCommandRegistry:
         for cmd in COMMAND_REGISTRY:
             assert cmd.category in valid_categories, f"{cmd.name} has invalid category '{cmd.category}'"
 
+    def test_memory_graph_command_is_registered(self):
+        cmd = resolve_command("hermes_memory_graph")
+        assert cmd is not None
+        assert cmd.name == "hermes-memory-graph"
+        assert cmd.description.startswith("Open Hermes Memory Graph")
+
+    def test_gemini_cli_command_is_registered(self):
+        cmd = resolve_command("gemini_cli")
+        assert cmd is not None
+        assert cmd.name == "gemini-cli"
+        assert "fall back to Hermes OS" in cmd.description
+        assert "gemini-cli" in GATEWAY_KNOWN_COMMANDS
+
+    def test_gemini_research_command_is_registered(self):
+        cmd = resolve_command("gemini_research")
+        assert cmd is not None
+        assert cmd.name == "gemini-research"
+        assert "Hermes → Gemini → Hermes" in cmd.description
+        assert "gemini-research" in GATEWAY_KNOWN_COMMANDS
+
+    def test_checkpoint_command_is_registered(self):
+        cmd = resolve_command("checkpoint")
+        assert cmd is not None
+        assert cmd.name == "checkpoint"
+        assert "GO, HOLD, or REDIRECT" in cmd.description
+        assert "checkpoint" in GATEWAY_KNOWN_COMMANDS
+
+    def test_telegram_menu_exposes_memory_graph_command(self):
+        names = {name for name, _ in telegram_bot_commands()}
+        assert "hermes_memory_graph" in names
+
     def test_reasoning_subcommands_are_in_logical_order(self):
         reasoning = next(cmd for cmd in COMMAND_REGISTRY if cmd.name == "reasoning")
         assert reasoning.subcommands[:6] == (

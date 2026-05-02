@@ -84,6 +84,8 @@ COMMAND_REGISTRY: list[CommandDef] = [
                aliases=("bg",), args_hint="<prompt>"),
     CommandDef("btw", "Ephemeral side question using session context (no tools, not persisted)", "Session",
                args_hint="<question>"),
+    CommandDef("agents", "Show active agents and running tasks", "Session",
+               aliases=("tasks",)),
     CommandDef("queue", "Queue a prompt for the next turn (doesn't interrupt)", "Session",
                aliases=("q",), args_hint="<prompt>"),
     CommandDef("status", "Show session info", "Session"),
@@ -101,6 +103,7 @@ COMMAND_REGISTRY: list[CommandDef] = [
     CommandDef("config", "Show current configuration", "Configuration",
                cli_only=True),
     CommandDef("model", "Switch model for this session", "Configuration", args_hint="[model] [--global]"),
+    CommandDef("gpts", "Show Codex GPT status and rate limits", "Info", args_hint="[--compare|--debug]"),
     CommandDef("provider", "Show available providers and current provider",
                "Configuration"),
 
@@ -123,6 +126,10 @@ COMMAND_REGISTRY: list[CommandDef] = [
                cli_only=True, args_hint="[name]"),
     CommandDef("voice", "Toggle voice mode", "Configuration",
                args_hint="[on|off|tts|status]", subcommands=("on", "off", "tts", "status")),
+
+    CommandDef("busy", "Control what Enter does while Hermes is working", "Configuration",
+               cli_only=True, args_hint="[queue|interrupt|status]",
+               subcommands=("queue", "interrupt", "status")),
 
     # Tools & Skills
     CommandDef("tools", "Manage tools: /tools [list|disable|enable] [name...]", "Tools & Skills",
@@ -155,6 +162,8 @@ COMMAND_REGISTRY: list[CommandDef] = [
                args_hint="[days]"),
     CommandDef("platforms", "Show gateway/messaging platform status", "Info",
                cli_only=True, aliases=("gateway",)),
+    CommandDef("copy", "Copy the last assistant response to clipboard", "Info",
+               cli_only=True),
     CommandDef("paste", "Check clipboard for an image and attach it", "Info",
                cli_only=True),
     CommandDef("image", "Attach a local image file for your next prompt", "Info",
@@ -162,10 +171,27 @@ COMMAND_REGISTRY: list[CommandDef] = [
     CommandDef("update", "Update Hermes Agent to the latest version", "Info",
                gateway_only=True),
     CommandDef("debug", "Upload debug report (system info + logs) and get shareable links", "Info"),
+    CommandDef("gemini-cli", "Run Gemini CLI and fall back to Hermes OS when unavailable", "Info",
+               aliases=("gemini_cli",), args_hint="[--model <model>] <prompt>"),
+    CommandDef("gemini-research", "Run a Hermes → Gemini → Hermes verification workflow", "Info",
+               aliases=("gemini_research",), args_hint="[--question ... --evidence ... --model ...]"),
+    CommandDef("hermes-memory-graph", "Open Hermes Memory Graph dashboard and show status", "Info",
+               aliases=("hermes_memory_graph",)),
+    CommandDef("hermes-workspace", "Launch Hermes Workspace UI/API and show mobile URLs", "Info",
+               aliases=("hermes_workspace", "workspace"), args_hint="[up|status|down|restart]",
+               subcommands=("up", "status", "down", "restart")),
+    CommandDef("checkpoint", "Run the go/no-go checkpoint gate (GO, HOLD, or REDIRECT)", "Session",
+               args_hint="[--goal ... --current ... --evidence ... --alternatives ...]"),
+    CommandDef("hermes-core-update-impact-gate", "Assess Hermes OS impact before core update", "Info",
+               aliases=("hermes_core_update_impact_gate",), args_hint="[--upstream URL] [--ref REF]"),
+    CommandDef("hermes-os", "Enter and control Hermes OS mode - on/off/status/dashboard/policy/fleet/rtk", "Info",
+               aliases=("hermes_os",), args_hint="[on|off|status|dashboard|policy|fleet|rtk]"),
+    CommandDef("codegraph", "Query Hermes code knowledge graph for dependencies and caller chains", "Tools & Skills",
+               aliases=("cg", "code_graph"), args_hint="[file_key] [--callers|--deps]"),
 
     # Exit
     CommandDef("quit", "Exit the CLI", "Exit",
-               cli_only=True, aliases=("exit", "q")),
+               cli_only=True, aliases=("exit",)),
 ]
 
 
@@ -373,12 +399,19 @@ def telegram_bot_commands() -> list[tuple[str, str]]:
     """
     overrides = _resolve_config_gates()
     result: list[tuple[str, str]] = []
+    used: set[str] = set()
     for cmd in COMMAND_REGISTRY:
         if not _is_gateway_available(cmd, overrides):
             continue
         tg_name = _sanitize_telegram_name(cmd.name)
-        if tg_name:
+        if tg_name and tg_name not in used:
             result.append((tg_name, cmd.description))
+            used.add(tg_name)
+    for name, description, _args_hint in _iter_plugin_command_entries():
+        tg_name = _sanitize_telegram_name(name)
+        if tg_name and tg_name not in used:
+            result.append((tg_name, description or "Plugin command"))
+            used.add(tg_name)
     return result
 
 
@@ -489,20 +522,14 @@ def _collect_gateway_skill_entries(
 
     # --- Tier 1: Plugin slash commands (never trimmed) ---------------------
     plugin_pairs: list[tuple[str, str]] = []
-    try:
-        from hermes_cli.plugins import get_plugin_manager
-        pm = get_plugin_manager()
-        plugin_cmds = getattr(pm, "_plugin_commands", {})
-        for cmd_name in sorted(plugin_cmds):
-            name = sanitize_name(cmd_name) if sanitize_name else cmd_name
-            if not name:
-                continue
-            desc = "Plugin command"
-            if len(desc) > desc_limit:
-                desc = desc[:desc_limit - 3] + "..."
-            plugin_pairs.append((name, desc))
-    except Exception:
-        pass
+    for cmd_name, cmd_desc, _cmd_hint in _iter_plugin_command_entries():
+        name = sanitize_name(cmd_name) if sanitize_name else cmd_name
+        if not name:
+            continue
+        desc = cmd_desc or "Plugin command"
+        if len(desc) > desc_limit:
+            desc = desc[:desc_limit - 3] + "..."
+        plugin_pairs.append((name, desc))
 
     plugin_pairs = _clamp_command_names(plugin_pairs, reserved_names)
     reserved_names.update(n for n, _ in plugin_pairs)
@@ -629,6 +656,93 @@ def discord_skill_commands(
     )
 
 
+
+
+
+_SLACK_NAME_LIMIT = 32
+_SLACK_MAX_SLASH_COMMANDS = 50
+_SLACK_INVALID_CHARS = re.compile(r"[^a-z0-9_-]")
+
+
+def _sanitize_slack_name(raw: str) -> str:
+    """Convert a command/plugin name to a Slack-compatible slash name."""
+    name = str(raw or "").lower()
+    name = _SLACK_INVALID_CHARS.sub("", name)
+    name = name.strip("-_")
+    return name[:_SLACK_NAME_LIMIT]
+
+
+def _iter_plugin_command_entries() -> list[tuple[str, str, str]]:
+    """Return plugin command entries as (name, description, args_hint)."""
+    entries: list[tuple[str, str, str]] = []
+    try:
+        from hermes_cli import plugins as _plugins_mod
+        plugin_cmds = _plugins_mod.get_plugin_commands() or {}
+    except Exception:
+        plugin_cmds = {}
+    for name in sorted(plugin_cmds):
+        info = plugin_cmds.get(name) or {}
+        if not isinstance(info, dict):
+            info = {}
+        entries.append((
+            str(name),
+            str(info.get("description") or "Plugin command"),
+            str(info.get("args_hint") or ""),
+        ))
+    return entries
+
+
+def slack_native_slashes() -> list[tuple[str, str, str]]:
+    """Return (slash_name, description, usage_hint) triples for Slack."""
+    overrides = _resolve_config_gates()
+    entries: list[tuple[str, str, str]] = []
+    seen: set[str] = set()
+    entries.append(("hermes", "Talk to Hermes or run a subcommand", "[subcommand] [args]"))
+    seen.add("hermes")
+
+    def _add(name: str, desc: str, hint: str) -> None:
+        slack_name = _sanitize_slack_name(name)
+        if not slack_name or slack_name in seen:
+            return
+        if len(entries) >= _SLACK_MAX_SLASH_COMMANDS:
+            return
+        entries.append((slack_name, (desc or "Run command")[:140], (hint or "")[:100]))
+        seen.add(slack_name)
+
+    for _priority_alias in ("btw", "bg", "reset", "q"):
+        _cmd = resolve_command(_priority_alias)
+        if _cmd and _is_gateway_available(_cmd, overrides):
+            _add(_priority_alias, f"Alias for /{_cmd.name} — {_cmd.description}", _cmd.args_hint or "")
+
+    for cmd in COMMAND_REGISTRY:
+        if _is_gateway_available(cmd, overrides):
+            _add(cmd.name, cmd.description, cmd.args_hint or "")
+    for cmd in COMMAND_REGISTRY:
+        if not _is_gateway_available(cmd, overrides):
+            continue
+        for alias in cmd.aliases:
+            _add(alias, f"Alias for /{cmd.name} — {cmd.description}", cmd.args_hint or "")
+    for name, desc, hint in _iter_plugin_command_entries():
+        _add(name, desc, hint)
+    return entries
+
+
+def slack_app_manifest(request_url: str = "https://hermes-agent.local/slack/commands") -> dict[str, Any]:
+    """Generate the Slack app manifest slash-command section."""
+    slashes = []
+    for name, desc, usage in slack_native_slashes():
+        entry = {
+            "command": f"/{name}",
+            "description": desc or f"Run /{name}",
+            "should_escape": False,
+            "url": request_url,
+        }
+        if usage:
+            entry["usage_hint"] = usage
+        slashes.append(entry)
+    return {"features": {"slash_commands": slashes}}
+
+
 def slack_subcommand_map() -> dict[str, str]:
     """Return subcommand -> /command mapping for Slack /hermes handler.
 
@@ -643,7 +757,77 @@ def slack_subcommand_map() -> dict[str, str]:
         mapping[cmd.name] = f"/{cmd.name}"
         for alias in cmd.aliases:
             mapping[alias] = f"/{alias}"
+    for name, _description, _args_hint in _iter_plugin_command_entries():
+        mapping.setdefault(name, f"/{name}")
     return mapping
+
+
+
+
+def discord_skill_commands_by_category(
+    reserved_names: set[str],
+    max_slots: int = 100,
+) -> tuple[dict[str, list[tuple[str, str, str]]], list[tuple[str, str, str]], int]:
+    """Return Discord skill commands grouped by top-level skill category."""
+    from pathlib import Path as _Path
+
+    try:
+        from agent.skill_commands import get_skill_commands
+        from tools.skills_tool import SKILLS_DIR
+        skills_dir = _Path(SKILLS_DIR).resolve()
+        hub_dir = (skills_dir / ".hub").resolve()
+        skill_cmds = get_skill_commands()
+    except Exception:
+        return {}, [], 0
+
+    categories: dict[str, list[tuple[str, str, str]]] = {}
+    uncategorized: list[tuple[str, str, str]] = []
+    hidden = 0
+    used = set(reserved_names or set())
+
+    for cmd_key in sorted(skill_cmds):
+        info = skill_cmds[cmd_key] or {}
+        raw_name = cmd_key.lstrip("/")
+        name = raw_name[:_CMD_NAME_LIMIT]
+        if not name or name in used:
+            continue
+        skill_path = str(info.get("skill_md_path") or "")
+        try:
+            rel = _Path(skill_path).resolve().relative_to(skills_dir)
+        except Exception:
+            continue
+        parts = rel.parts
+        if parts and parts[0] == ".hub":
+            continue
+        try:
+            if _Path(skill_path).resolve().is_relative_to(hub_dir):
+                continue
+        except Exception:
+            pass
+        desc = str(info.get("description") or "")
+        if len(desc) > 100:
+            desc = desc[:97] + "..."
+        entry = (name, desc, cmd_key)
+        used.add(name)
+        if len(used) > max_slots + len(reserved_names or set()):
+            hidden += 1
+            continue
+        if len(parts) >= 3:
+            categories.setdefault(parts[0], []).append(entry)
+        else:
+            uncategorized.append(entry)
+
+    return categories, uncategorized, hidden
+
+
+def is_gateway_known_command(name: str) -> bool:
+    """Return whether a built-in, alias, or plugin command is known to gateway."""
+    normalized = str(name or "").strip().lstrip("/")
+    if not normalized:
+        return False
+    if normalized in GATEWAY_KNOWN_COMMANDS:
+        return True
+    return any(plugin_name == normalized for plugin_name, _d, _h in _iter_plugin_command_entries())
 
 
 # ---------------------------------------------------------------------------
