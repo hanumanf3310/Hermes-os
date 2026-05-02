@@ -20,7 +20,8 @@ def test_root_command_activates_hermes_os_mode_and_reports_ready(capsys):
     assert mock_run.call_count == 1
     assert mock_run.call_args.args[0] == ["hermes-os", "on"]
     assert "Mode: hermes_os" in captured
-    assert "ready to work" in captured.lower()
+    assert "พร้อมทำงานใน Hermes OS context" in captured
+    assert "Hermes OS Context" in captured
     assert "Hermes OS context active" in captured
     assert "Direct execution remains the default" in captured
     assert "Fleet runs only on explicit" in captured
