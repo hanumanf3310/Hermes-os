@@ -10194,6 +10194,10 @@ def main(
     """
     global _active_worktree
 
+    from hermes_cli.policy_gate import enforce_merged_policy_gate
+
+    enforce_merged_policy_gate()
+
     # Signal to terminal_tool that we're in interactive mode
     # This enables interactive sudo password prompts with timeout
     os.environ["HERMES_INTERACTIVE"] = "1"

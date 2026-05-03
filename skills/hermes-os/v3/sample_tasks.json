@@ -1,0 +1,144 @@
+{
+  "samples": [
+    {
+      "message": "สวัสดี",
+      "expected_score": 0,
+      "expected_score_max": 2,
+      "expected_route": "direct",
+      "description": "Thai greeting - very simple"
+    },
+    {
+      "message": "Hello",
+      "expected_score": 0,
+      "expected_score_max": 2,
+      "expected_route": "direct",
+      "description": "English greeting - very simple"
+    },
+    {
+      "message": "",
+      "expected_score": 0,
+      "expected_score_max": 0,
+      "expected_route": "direct",
+      "description": "Empty message"
+    },
+    {
+      "message": "บอกวันที่วันนี้หน่อย",
+      "expected_score_min": 1,
+      "expected_score_max": 3,
+      "expected_route": "direct",
+      "description": "Simple date question"
+    },
+    {
+      "message": "What day is today?",
+      "expected_score_min": 1,
+      "expected_score_max": 3,
+      "expected_route": "direct",
+      "description": "Simple English question"
+    },
+    {
+      "message": "เขียนโปรแกรมร้านค้าให้หน่อย",
+      "expected_score_min": 5,
+      "expected_score_max": 7,
+      "expected_route": "fleet",
+      "description": "Store program request - Thai"
+    },
+    {
+      "message": "เขียน Python script เปลี่ยนชื่อไฟล์",
+      "expected_score_min": 4,
+      "expected_score_max": 7,
+      "expected_route": "direct",
+      "description": "Python script for file renaming"
+    },
+    {
+      "message": "Create a Python script to rename files",
+      "expected_score_min": 4,
+      "expected_score_max": 7,
+      "expected_route": "direct",
+      "description": "Python script - English"
+    },
+    {
+      "message": "สร้าง web app ร้านค้าใช้ React + Node.js + Database",
+      "expected_score_min": 8,
+      "expected_score_max": 10,
+      "expected_route": "fleet",
+      "description": "Full e-commerce web app - Thai"
+    },
+    {
+      "message": "Build a web app with React, Node.js, and database",
+      "expected_score_min": 8,
+      "expected_score_max": 10,
+      "expected_route": "fleet",
+      "description": "Full web app - English"
+    },
+    {
+      "message": "Research API ที่ดีที่สุดสำหรับ payment",
+      "expected_score_min": 6,
+      "expected_score_max": 8,
+      "expected_route": "fleet",
+      "description": "Research task - Payment API"
+    },
+    {
+      "message": "Find the best payment gateway API",
+      "expected_score_min": 6,
+      "expected_score_max": 8,
+      "expected_route": "fleet",
+      "description": "Research - English"
+    },
+    {
+      "message": "Refactor และปรับปรุงโครงสร้างทุกไฟล์ในโปรเจค",
+      "expected_score_min": 6,
+      "expected_score_max": 8,
+      "expected_route": "fleet",
+      "description": "Multi-file refactoring - Thai"
+    },
+    {
+      "message": "Refactor all files in the project",
+      "expected_score_min": 4,
+      "expected_score_max": 7,
+      "expected_route": "direct",
+      "description": "Refactoring - English"
+    },
+    {
+      "message": "สร้างระบบ that integrates with external API and requires database connection",
+      "expected_score_min": 6,
+      "expected_score_max": 9,
+      "expected_route": "fleet",
+      "description": "Mixed language with dependencies"
+    },
+    {
+      "message": "How do I deploy a Django app to AWS?",
+      "expected_score_min": 4,
+      "expected_score_max": 7,
+      "expected_route": "direct",
+      "description": "How-to question with technical terms"
+    },
+    {
+      "message": "อะไรคือวิธีที่ดีที่สุดในการเขียนโปรแกรม",
+      "expected_score_min": 2,
+      "expected_score_max": 5,
+      "expected_route": "direct",
+      "description": "Thai question with question word"
+    },
+    {
+      "message": "Debug error in my Python code",
+      "expected_score_min": 3,
+      "expected_score_max": 5,
+      "expected_route": "direct",
+      "description": "Debug Python code"
+    },
+    {
+      "message": "แก้ไข bug ในโค้ด Python",
+      "expected_score_min": 3,
+      "expected_score_max": 5,
+      "expected_route": "direct",
+      "description": "Debug - Thai"
+    },
+    {
+      "message": "สร้างระบบร้านค้าออนไลน์แบบครบวงจรโดยใช้ Python Django สำหรับ backend, React สำหรับ frontend, PostgreSQL สำหรับ database และต้องเชื่อมต่อกับ Stripe API",
+      "expected_score": 10,
+      "expected_score_max": 10,
+      "expected_route": "fleet",
+      "description": "Maximum complexity - Full e-commerce system"
+    }
+  ]
+}

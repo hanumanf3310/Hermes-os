@@ -11,7 +11,7 @@
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
@@ -19,7 +19,7 @@
             min-height: 100vh;
             overflow: hidden;
         }
-        
+
         .header {
             position: fixed;
             top: 0;
@@ -34,7 +34,7 @@
             z-index: 1000;
             border-bottom: 1px solid rgba(255,255,255,0.1);
         }
-        
+
         .header h1 {
             font-size: 1.5rem;
             background: linear-gradient(90deg, #a855f7, #ec4899);
@@ -44,13 +44,13 @@
             align-items: center;
             gap: 10px;
         }
-        
+
         .stats {
             display: flex;
             gap: 20px;
             font-size: 0.9rem;
         }
-        
+
         .stat-item {
             display: flex;
             align-items: center;
@@ -59,13 +59,13 @@
             padding: 8px 15px;
             border-radius: 20px;
         }
-        
+
         .stat-dot {
             width: 10px;
             height: 10px;
             border-radius: 50%;
         }
-        
+
         .legend {
             position: fixed;
             bottom: 20px;
@@ -77,13 +77,13 @@
             z-index: 1000;
             border: 1px solid rgba(255,255,255,0.1);
         }
-        
+
         .legend h3 {
             margin-bottom: 15px;
             font-size: 1rem;
             color: #a78bfa;
         }
-        
+
         .legend-item {
             display: flex;
             align-items: center;
@@ -91,13 +91,13 @@
             margin: 8px 0;
             font-size: 0.85rem;
         }
-        
+
         .legend-dot {
             width: 14px;
             height: 14px;
             border-radius: 50%;
         }
-        
+
         .controls {
             position: fixed;
             top: 80px;
@@ -109,7 +109,7 @@
             z-index: 1000;
             border: 1px solid rgba(255,255,255,0.1);
         }
-        
+
         .controls button {
             background: rgba(168,85,247,0.3);
             border: 1px solid rgba(168,85,247,0.5);
@@ -120,18 +120,18 @@
             margin: 5px;
             transition: all 0.3s;
         }
-        
+
         .controls button:hover {
             background: rgba(168,85,247,0.5);
         }
-        
+
         .search-box {
             position: fixed;
             top: 80px;
             left: 20px;
             z-index: 1000;
         }
-        
+
         .search-box input {
             background: rgba(0,0,0,0.7);
             backdrop-filter: blur(10px);
@@ -144,26 +144,26 @@
             outline: none;
             transition: all 0.3s;
         }
-        
+
         .search-box input:focus {
             border-color: #a855f7;
             box-shadow: 0 0 20px rgba(168,85,247,0.3);
         }
-        
+
         .search-box input::placeholder {
             color: rgba(255,255,255,0.5);
         }
-        
+
         #graph {
             width: 100vw;
             height: 100vh;
             cursor: grab;
         }
-        
+
         #graph:active {
             cursor: grabbing;
         }
-        
+
         .tooltip {
             position: absolute;
             background: rgba(0,0,0,0.95);
@@ -177,20 +177,20 @@
             z-index: 2000;
             box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         }
-        
+
         .tooltip h4 {
             color: #a78bfa;
             margin-bottom: 8px;
             font-size: 1rem;
         }
-        
+
         .tooltip p {
             color: #e0e0e0;
             font-size: 0.85rem;
             line-height: 1.5;
             margin: 5px 0;
         }
-        
+
         .tooltip .meta {
             color: #6b7280;
             font-size: 0.75rem;
@@ -198,7 +198,7 @@
             border-top: 1px solid rgba(255,255,255,0.1);
             padding-top: 8px;
         }
-        
+
         .node-label {
             fill: white;
             font-size: 11px;
@@ -206,25 +206,25 @@
             text-shadow: 0 0 3px rgba(0,0,0,0.8);
             pointer-events: none;
         }
-        
+
         .link {
             stroke-opacity: 0.4;
             transition: all 0.3s;
         }
-        
+
         .link:hover {
             stroke-opacity: 0.8;
         }
-        
+
         .pulse {
             animation: pulse 2s infinite;
         }
-        
+
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
-        
+
         .sidebar {
             position: fixed;
             right: -400px;
@@ -239,17 +239,17 @@
             z-index: 999;
             overflow-y: auto;
         }
-        
+
         .sidebar.active {
             right: 0;
         }
-        
+
         .sidebar h2 {
             color: #a78bfa;
             margin-bottom: 20px;
             font-size: 1.3rem;
         }
-        
+
         .sidebar .close-btn {
             position: absolute;
             top: 20px;
@@ -260,7 +260,7 @@
             font-size: 1.5rem;
             cursor: pointer;
         }
-        
+
         .detail-item {
             background: rgba(255,255,255,0.05);
             padding: 15px;
@@ -268,19 +268,19 @@
             margin: 10px 0;
             border: 1px solid rgba(255,255,255,0.1);
         }
-        
+
         .detail-item h3 {
             color: #60a5fa;
             font-size: 0.95rem;
             margin-bottom: 8px;
         }
-        
+
         .detail-item p {
             color: #d1d5db;
             font-size: 0.85rem;
             line-height: 1.5;
         }
-        
+
         .tag {
             display: inline-block;
             background: rgba(168,85,247,0.3);
@@ -314,19 +314,19 @@
             </div>
             <div class="stat-item">
                 <div class="stat-dot" style="background: #3b82f6;"></div>
-                <span id="stat-skills">27 Skills</span>
+                <span id="stat-skills">35 Skills</span>
             </div>
             <div class="stat-item">
                 <div class="stat-dot" style="background: #ef4444;"></div>
-                <span id="stat-orphans">3 Missing</span>
+                <span id="stat-orphans">2 Missing</span>
             </div>
         </div>
     </div>
-    
+
     <div class="search-box">
         <input type="text" id="search" placeholder="🔍 ค้นหา memory, skill, category...">
     </div>
-    
+
     <div class="controls">
         <button onclick="resetZoom()">⟲ Reset View</button>
         <button onclick="togglePhysics()">⚡ Toggle Physics</button>
@@ -335,7 +335,7 @@
     <div style="margin: 10px 0 0; padding: 8px 14px; border: 1px solid rgba(244,63,94,0.35); border-radius: 10px; background: rgba(244,63,94,0.08); color: #fecdd3; font-size: 13px;">
         🔒 อ่านอย่างเดียว — ไม่มีปุ่มเพิ่ม / ลบ / แก้ไข; ข้อมูลต้องมาจากระบบเท่านั้น
     </div>
-    
+
     <div class="legend">
         <h3>🎨 Legend</h3>
         <div class="legend-item">
@@ -375,11 +375,11 @@
             <span>➡️ เส้นเชื่อม (ความสัมพันธ์)</span>
         </div>
     </div>
-    
+
     <svg id="graph"></svg>
-    
+
     <div class="tooltip" id="tooltip"></div>
-    
+
     <div class="sidebar" id="sidebar">
         <button class="close-btn" onclick="closeSidebar()">×</button>
         <div id="sidebar-content">
@@ -392,10 +392,12 @@
         const data = {
             "nodes": [
                 // Memory Facts (หลัก) - Purple
-                {"id": "user_profile", "name": "👤 Boss Profile", "type": "memory", "color": "#a855f7", "size": 25, 
+                {"id": "user_profile", "name": "👤 Boss Profile", "type": "memory", "color": "#a855f7", "size": 25,
                  "desc": "User preferences: ชอบให้เรียก Boss, ใช้ภาษาไทย, มีคำสั่ง /save พิเศษ"},
                 {"id": "google_me", "name": "Google ME", "type": "memory", "color": "#a855f7", "size": 20,
                  "desc": "OAuth setup complete: Gmail, Calendar(4), Drive, Sheets, Docs - hanumanf@gmail.com"},
+                {"id": "google_contacts_api", "name": "👥 Contacts API", "type": "project", "color": "#10b981", "size": 16,
+                 "desc": "Verified 2026-05-03: token has contacts.readonly scope and People API returned OK using a 1-record non-printing probe", "status": "verified"},
                 {"id": "fact_google_me_permissions", "name": "🩷 Google ME Permissions", "type": "fact_plus_star", "color": "#fb7185", "size": 20,
                  "desc": "Fact+* record: Google ME is reauthorized with write scopes for Docs, Drive, and Sheets; create/move operations are allowed, deletion is forbidden by policy, and this must be verified before use", "fact_type": "fact_plus_star", "fact_star": true, "fact_plus": true, "verify_before_use": true, "importance_level": "critical", "star_reason": "Workspace permission changes affect live file operations and must stay non-destructive", "learning_policy_id": "policy-google-me-permissions", "verification_status": "verified", "impact_scope": ["google_workspace", "drive", "docs", "learning"], "rollback_required": true},
                 {"id": "hermes_workspace", "name": "🚀 Hermes Workspace", "type": "memory", "color": "#a855f7", "size": 22,
@@ -464,8 +466,28 @@
                  "desc": "B-phase evidence: AIAgent run_conversation injects low-authority Context Mode retrieval into the current user turn only; normal Gateway/Hermes direct execution remains default and Fact/Policy/system instructions win"},
                 {"id": "policy_compliance_checker", "name": "🛡️ Policy Compliance Checker", "type": "policy", "color": "#e63946", "size": 26,
                  "desc": "C-phase evidence: Hermes OS Policy Gateway compliance analyzer with staged UTC+7 fixes; reads merged-hard-gate-policy.yaml to check RTK, UTC+7, Evidence-first compliance"},
+                {"id": "merged_policy_startup_gate", "name": "🔐 Merged Policy Startup Gate", "type": "policy", "color": "#e63946", "size": 27,
+                 "desc": "Restored 2026-05-03: CLI, gateway, cli.py, and run_agent.py fail closed through merged-hard-gate-policy.yaml before Hermes OS/Core startup"},
+                {"id": "command_registry_parity", "name": "🧭 Command Registry Parity", "type": "policy", "color": "#e63946", "size": 22,
+                 "desc": "Command source of truth for CLI, Gateway, Telegram menu, aliases, and autocomplete; covers /gpts, /hermes_workspace, /hermes-workspace, and duplicate command checks"},
+                {"id": "model_picker_default_gpt54mini", "name": "🏁 GPT-5.4 Mini Default", "type": "policy", "color": "#e63946", "size": 20,
+                 "desc": "Model picker default restored so GPT-5.4 mini is the first/primary system choice while provider menus keep OpenAI Codex and Ollama routes visible"},
+                {"id": "context7_mcp_docs_evidence", "name": "📘 Context7 MCP", "type": "system", "color": "#14b8a6", "size": 23,
+                 "desc": "Installed MCP docs-evidence nerve: resolves library IDs and queries current external docs; never overrides local files, policy, Fact Store, tests, or runtime evidence"},
+                {"id": "skill_context7_docs_evidence", "name": "Context7 Docs Evidence Skill", "type": "skill", "color": "#3b82f6", "size": 18,
+                 "desc": "Hermes OS doctrine skill for using Context7 as external docs evidence for coding tasks and fast-moving APIs", "category": "cat_hermes_os"},
+                {"id": "context7_skill_binding_manifest", "name": "🧭 Context7 Skill Binding", "type": "policy", "color": "#e63946", "size": 21,
+                 "desc": "Classifies 188 installed skills into direct, conditional, local-first, and not-needed Context7 modes so docs lookup stays useful without replacing local truth"},
+                {"id": "grill_with_docs_gate", "name": "🔥 Grill-With-Docs Gate", "type": "workflow", "color": "#e74c3c", "size": 20,
+                 "desc": "Extension of hermes-os-grill-me: ask six checkpoint questions first, then use Context7 only when the planned action depends on current external docs"},
+                {"id": "gpts_realtime_session_bridge", "name": "📊 /gpts Realtime Bridge", "type": "policy", "color": "#e63946", "size": 19,
+                 "desc": "Keeps /gpts grounded in Codex session JSONL, cache freshness, command registry state, and CLI/Gateway smoke tests; Context7 is only for SDK/API docs"},
+                {"id": "model_picker_catalog_parity", "name": "🎛️ Model Picker Parity", "type": "policy", "color": "#e63946", "size": 19,
+                 "desc": "Protects /model render catalog, selection validation, and provider visibility so GPT-5.4 mini default and live provider menus do not drift"},
+                {"id": "telegram_gateway_autostart", "name": "📱 Telegram Gateway Autostart", "type": "system", "color": "#14b8a6", "size": 20,
+                 "desc": "Verified 2026-05-03: hermes-gateway.service is enabled with Restart=always, WSL linger is active, and Windows startup keepalive launches/restarts the gateway after login"},
 
-                
+
                 // Categories - Orange
                 {"id": "cat_devops", "name": "🔧 DevOps", "type": "category", "color": "#f97316", "size": 22},
                 {"id": "cat_productivity", "name": "⚡ Productivity", "type": "category", "color": "#f97316", "size": 22},
@@ -479,7 +501,7 @@
                 {"id": "cat_mcp", "name": "🔗 MCP", "type": "category", "color": "#f97316", "size": 16},
                 {"id": "cat_hermes_os", "name": "🛰️ Hermes OS", "type": "category", "color": "#f97316", "size": 20},
                 {"id": "cat_external_agents", "name": "🧩 External Agents", "type": "category", "color": "#f97316", "size": 20},
-                
+
                 // Skills - Blue
                 {"id": "skill_hermes_agent", "name": "Hermes Agent", "type": "skill", "color": "#3b82f6", "size": 18,
                  "desc": "Complete guide to using and extending Hermes Agent", "category": "cat_autonomous"},
@@ -539,7 +561,19 @@
                  "desc": "Registered Hermes OS Operator Blueprint skill: /hermes-os-blueprint loads the model-agnostic AGENT.md lesson flow with STOP/ACTION/CHECKPOINT gates", "category": "cat_hermes_os"},
                 {"id": "skill_hermes_code_graph", "name": "🔍 Hermes Code Graph", "type": "skill", "color": "#3b82f6", "size": 18,
                  "desc": "Slash command /codegraph for querying Hermes OS code dependencies and caller/dependency paths; wired through command registry, CLI, Gateway, and active-session bypass", "category": "cat_software"},
-                
+                {"id": "skill_comfyui", "name": "🎛️ ComfyUI", "type": "skill", "color": "#3b82f6", "size": 17,
+                 "desc": "Upstream v0.12 creative skill bundle: ComfyUI workflows, local/cloud setup, REST/WS execution scripts", "category": "cat_creative"},
+                {"id": "skill_humanizer", "name": "✍️ Humanizer", "type": "skill", "color": "#3b82f6", "size": 15,
+                 "desc": "Rewrite and edit text to remove AI-isms while preserving meaning and voice", "category": "cat_creative"},
+                {"id": "skill_claude_design", "name": "🎨 Claude Design", "type": "skill", "color": "#3b82f6", "size": 16,
+                 "desc": "CLI/API-mode design workflow for polished one-off HTML artifacts, decks, and prototypes", "category": "cat_creative"},
+                {"id": "skill_pretext", "name": "🔤 Pretext", "type": "skill", "color": "#3b82f6", "size": 15,
+                 "desc": "Creative browser demos using @chenglou/pretext for text-as-geometry, typography, and canvas layouts", "category": "cat_creative"},
+                {"id": "skill_sketch", "name": "🧪 Sketch", "type": "skill", "color": "#3b82f6", "size": 15,
+                 "desc": "Throwaway HTML mockups with 2-3 design variants before committing to a direction", "category": "cat_creative"},
+                {"id": "skill_touchdesigner_mcp", "name": "🌈 TouchDesigner MCP", "type": "skill", "color": "#3b82f6", "size": 17,
+                 "desc": "Control TouchDesigner via twozero MCP for real-time visuals, GLSL, audio-reactive systems, and installations", "category": "cat_creative"},
+
                 // Projects - Green
                 {"id": "proj_workspace_ui", "name": "🌐 Workspace UI", "type": "project", "color": "#10b981", "size": 19,
                  "desc": "Frontend UI for Hermes - Vite + React", "status": "active"},
@@ -565,29 +599,103 @@
                  "desc": "Evidence artifact proving backup/restore path returns protected Hermes OS control-plane files to expected observable state", "status": "active"},
                 {"id": "proj_hermes_os_blueprint", "name": "📘 Hermes OS Blueprint", "type": "project", "color": "#10b981", "size": 20,
                  "desc": "Hermes OS Operator Blueprint v0.1 VERIFIED at /home/hanuman3310/hermes-os-blueprint; 8 lessons complete with STOP/ACTION/CHECKPOINT discipline, 8 evidence artifacts, model-agnostic, policy-first, evidence-first; dashboard+skill registration pending Boss approval", "status": "active"},
-                
+
                 // Missing links - Red (orphans)
-                {"id": "orphan_contacts", "name": "👥 Contacts API", "type": "orphan", "color": "#ef4444", "size": 14,
-                 "desc": "ต้องเปิดใน Google Cloud Console", "orphan": true},
                 {"id": "orphan_tailscale", "name": "🔗 Tailscale Sync", "type": "orphan", "color": "#ef4444", "size": 14,
-                 "desc": "ยังไม่ติดตั้งใน WSL", "orphan": true},
+                 "desc": "Checked 2026-05-03: tailscale command not found in WSL; still missing", "orphan": true, "status": "missing"},
                 {"id": "orphan_named_tunnel", "name": "🌐 Named Tunnel", "type": "orphan", "color": "#ef4444", "size": 13,
-                 "desc": "ใช้ Cloudflare account สำหรับ URL ถาวร", "orphan": true}
+                 "desc": "Checked 2026-05-03: cloudflared exists, but no ~/.cloudflared cert/config for a permanent named tunnel; quick tunnel/ngrok remains separate", "orphan": true, "status": "missing"}
                 ,
                 {
-                    "id": "new_feature_x",
-                    "label": "New Feature X",
-                    "description": "Experimental node added via Lesson 7 checkpoint",
-                    "type": "feature",
+                    "id": "lesson7_checkpoint_evidence",
+                    "name": "🧪 Lesson 7 Checkpoint",
+                    "desc": "Interactive training checkpoint evidence from the new Hermes OS Blueprint draft; verifies dashboard evidence mapping before promotion",
+                    "type": "training_blueprint",
+                    "color": "#14b8a6",
+                    "size": 18,
                     "status": "draft"
                 }
                 ,
                 {
                     "id": "hermes_os_blueprint_v02",
-                    "label": "Hermes OS Blueprint v0.2 — Interactive Training",
-                    "description": "Active-learning operator blueprint covering Hermes OS mode control, RTK enforcement, UTC+7 normalization, policy gateway, delegation boundaries, and dashboard evidence",
+                    "name": "📘 Hermes OS Blueprint v0.2",
+                    "desc": "Interactive training draft covering Hermes OS mode control, RTK enforcement, UTC+7 normalization, policy gateway, delegation boundaries, and dashboard evidence",
                     "type": "training_blueprint",
+                    "color": "#14b8a6",
+                    "size": 22,
                     "status": "complete"
+                }
+                ,
+                {
+                    "id": "git_clean_history",
+                    "name": "🧹 Git Clean History",
+                    "type": "workflow",
+                    "color": "#e74c3c",
+                    "size": 24,
+                    "desc": "git-filter-repo removing 102MB archives from 5,662 commits (B workflow)"
+                }
+                ,
+                {
+                    "id": "git_lfs_setup",
+                    "name": "📦 Git LFS",
+                    "type": "workflow",
+                    "color": "#e74c3c",
+                    "size": 22,
+                    "desc": "Track archives (.tar.gz, .bundle) without sudo; binary install v3.7.1 (C workflow)"
+                }
+                ,
+                {
+                    "id": "hermes_os_auto_run",
+                    "name": "⏰ Auto-Run Scheduler",
+                    "type": "system",
+                    "color": "#9b59b6",
+                    "size": 26,
+                    "desc": "Cron-based 07:00/19:00 Auto-Run with cooldown, kill switch, ledger, promote gate, monitor pulse, and Telegram notify; kill switch cleared 2026-05-03"
+                }
+                ,
+                {
+                    "id": "auto_run_pulse_gate",
+                    "name": "🫀 Auto-Run Pulse Gate",
+                    "type": "system",
+                    "color": "#9b59b6",
+                    "size": 23,
+                    "desc": "Post-repair pulse checker: monitor reads live state, promote gate trusts ledger after repair, and HOLD means waiting for next scheduled cycle rather than failure"
+                }
+                ,
+                {
+                    "id": "workspace_upstream_pull",
+                    "name": "🔄 Workspace Upstream",
+                    "type": "system",
+                    "color": "#3498db",
+                    "size": 24,
+                    "desc": "Fast-forward pull origin/main with 24MB bundle backup + stash safety"
+                }
+                ,
+                {
+                    "id": "obsidian_kb",
+                    "name": "📚 Obsidian KB",
+                    "type": "system",
+                    "color": "#10b981",
+                    "size": 22,
+                    "desc": "External markdown knowledge base layer synced from Fact Store; 2026-05-03 manual sync wrote 16 facts and rsync mirrored WSL vault to Windows Obsidian Vault"
+                }
+                ,
+                {
+                    "id": "runbook",
+                    "name": "📖 Runbook",
+                    "type": "system",
+                    "color": "#ef4444",
+                    "size": 20,
+                    "desc": "Disaster recovery and operational procedures: gateway reload, git cleanup, RTK compliance, vault recovery"
+                }
+                ,
+                {
+                    "id": "upstream_skill_bundle_v012",
+                    "name": "🎁 Upstream Skill Bundle v0.12",
+                    "type": "system",
+                    "color": "#3b82f6",
+                    "size": 21,
+                    "desc": "Low-risk B+C Hybrid adoption slice: six upstream creative skills copied from isolated hermes-agent-v2 into user skills without merging core"
                 }
             ],
             "links": [
@@ -606,6 +714,22 @@
                 {"source": "skill_hermes_code_graph", "target": "hermes_os_core", "type": "queries-code"},
                 {"source": "skill_hermes_code_graph", "target": "proj_hermes_os_runtime", "type": "gateway-command"},
                 {"source": "skill_hermes_code_graph", "target": "runtime_drift_checker", "type": "protected-file-sync"},
+                {"source": "user_profile", "target": "upstream_skill_bundle_v012", "type": "approved-adoption"},
+                {"source": "hermes_os_core", "target": "upstream_skill_bundle_v012", "type": "policy-gated"},
+                {"source": "upstream_update_auditor", "target": "upstream_skill_bundle_v012", "type": "source-audited"},
+                {"source": "proj_memory_graph", "target": "upstream_skill_bundle_v012", "type": "visualizes"},
+                {"source": "cat_creative", "target": "skill_comfyui", "type": "contains"},
+                {"source": "cat_creative", "target": "skill_humanizer", "type": "contains"},
+                {"source": "cat_creative", "target": "skill_claude_design", "type": "contains"},
+                {"source": "cat_creative", "target": "skill_pretext", "type": "contains"},
+                {"source": "cat_creative", "target": "skill_sketch", "type": "contains"},
+                {"source": "cat_creative", "target": "skill_touchdesigner_mcp", "type": "contains"},
+                {"source": "upstream_skill_bundle_v012", "target": "skill_comfyui", "type": "installed-skill"},
+                {"source": "upstream_skill_bundle_v012", "target": "skill_humanizer", "type": "installed-skill"},
+                {"source": "upstream_skill_bundle_v012", "target": "skill_claude_design", "type": "installed-skill"},
+                {"source": "upstream_skill_bundle_v012", "target": "skill_pretext", "type": "installed-skill"},
+                {"source": "upstream_skill_bundle_v012", "target": "skill_sketch", "type": "installed-skill"},
+                {"source": "upstream_skill_bundle_v012", "target": "skill_touchdesigner_mcp", "type": "installed-skill"},
                 // Memory connections
                                 // Memory Enhancement connections
                 {"source": "memory_enhancement", "target": "hermes_os_core", "type": "extends"},
@@ -643,7 +767,7 @@
                 {"source": "proj_memory_graph", "target": "proj_hermes_os_blueprint", "type": "visualizes"},
                 {"source": "proj_hermes_os_blueprint", "target": "chat_context_binding", "type": "teaches-context-contract"},
                 {"source": "proj_hermes_os_blueprint", "target": "fact_checkpoint_anti_loop", "type": "teaches-checkpoint-gate"},
-                
+
                 // Original user_profile → hermes_workspace link
                 {"source": "user_profile", "target": "google_me", "type": "owns"},
                 {"source": "user_profile", "target": "fact_google_me_permissions", "type": "approved-permissions"},
@@ -682,7 +806,7 @@
                 {"source": "upstream_update_auditor", "target": "upstream_audit_report", "type": "produces"},
                 {"source": "upstream_audit_report", "target": "agent_coding_benchmark", "type": "references"},
                 {"source": "upstream_audit_report", "target": "proj_memory_graph", "type": "visualizes"},
-                
+
                 // Categories to skills
                 {"source": "cat_devops", "target": "skill_workspace_launcher", "type": "contains"},
                 {"source": "cat_devops", "target": "skill_webhook", "type": "contains"},
@@ -708,7 +832,7 @@
                 {"source": "cat_hermes_os", "target": "skill_hermes_learning", "type": "contains"},
                 {"source": "cat_devops", "target": "skill_rtk_mes", "type": "contains"},
                 {"source": "cat_software", "target": "skill_writing_plans", "type": "contains"},
-                
+
                 // Skills to projects
                 {"source": "skill_workspace_launcher", "target": "proj_workspace_ui", "type": "launches"},
                 {"source": "hermes_workspace", "target": "proj_memory_graph", "type": "inspires"},
@@ -768,14 +892,14 @@
                 {"source": "skill_hermes_agent", "target": "hermes_os_core", "type": "extends"},
                 {"source": "skill_codex", "target": "cat_software", "type": "coding-agent"},
                 {"source": "skill_claude_code", "target": "cat_software", "type": "coding-agent"},
-                
+
                 // Orphan links (broken/missing)
-                {"source": "google_me", "target": "orphan_contacts", "type": "missing", "dashed": true},
+                {"source": "google_me", "target": "google_contacts_api", "type": "verified"},
                 {"source": "hermes_workspace", "target": "orphan_tailscale", "type": "todo", "dashed": true},
                 {"source": "hermes_workspace", "target": "orphan_named_tunnel", "type": "improvement", "dashed": true}
                 ,
                 {
-                    "source": "new_feature_x",
+                    "source": "lesson7_checkpoint_evidence",
                     "target": "proj_hermes_os_blueprint",
                     "type": "depends-on"
                 }
@@ -791,22 +915,158 @@
                     "target": "proj_hermes_os_blueprint",
                     "type": "supersedes-partially"
                 }
+                ,
+                {"source": "merged_policy_startup_gate", "target": "hermes_os_core", "type": "guards-startup"},
+                {"source": "merged_policy_startup_gate", "target": "policy_compliance_checker", "type": "enforced-by"},
+                {"source": "merged_policy_startup_gate", "target": "core_update_safety_gate", "type": "mandatory-before-core"},
+                {"source": "command_registry_parity", "target": "hermes_os_core", "type": "protects-command-surface"},
+                {"source": "command_registry_parity", "target": "telegram_greeting", "type": "syncs-bot-menu"},
+                {"source": "command_registry_parity", "target": "hermes_workspace", "type": "normalizes-aliases"},
+                {"source": "model_picker_default_gpt54mini", "target": "omx_gpt54mini_primary", "type": "selects-primary"},
+                {"source": "model_picker_default_gpt54mini", "target": "command_registry_parity", "type": "exposed-through"},
+                {"source": "context7_mcp_docs_evidence", "target": "cat_mcp", "type": "mcp-server"},
+                {"source": "context7_mcp_docs_evidence", "target": "hermes_os_core", "type": "docs-evidence-nerve"},
+                {"source": "context7_mcp_docs_evidence", "target": "context_mode_rag_index", "type": "complements-not-replaces"},
+                {"source": "context7_mcp_docs_evidence", "target": "fact_store", "type": "lower-authority-than"},
+                {"source": "skill_context7_docs_evidence", "target": "context7_mcp_docs_evidence", "type": "uses-tools"},
+                {"source": "cat_hermes_os", "target": "skill_context7_docs_evidence", "type": "contains"},
+                {"source": "context7_skill_binding_manifest", "target": "skill_context7_docs_evidence", "type": "governs-skill-binding"},
+                {"source": "context7_skill_binding_manifest", "target": "hermes_os_core", "type": "policy-boundary"},
+                {"source": "context7_skill_binding_manifest", "target": "skill_workspace_launcher", "type": "conditional-binding"},
+                {"source": "context7_skill_binding_manifest", "target": "gpts_realtime_session_bridge", "type": "conditional-binding"},
+                {"source": "grill_with_docs_gate", "target": "skill_hermes_os_integration", "type": "checkpoint-extension"},
+                {"source": "grill_with_docs_gate", "target": "context7_mcp_docs_evidence", "type": "docs-checkpoint"},
+                {"source": "grill_with_docs_gate", "target": "fact_checkpoint_anti_loop", "type": "go-no-go-discipline"},
+                {"source": "gpts_realtime_session_bridge", "target": "command_registry_parity", "type": "protects-command-output"},
+                {"source": "gpts_realtime_session_bridge", "target": "skill_codex", "type": "reads-session-jsonl"},
+                {"source": "model_picker_catalog_parity", "target": "model_picker_default_gpt54mini", "type": "protects-default"},
+                {"source": "model_picker_catalog_parity", "target": "command_registry_parity", "type": "picker-command-parity"},
+                {"source": "telegram_gateway_autostart", "target": "telegram_greeting", "type": "keeps-online"},
+                {"source": "telegram_gateway_autostart", "target": "hermes_os_core", "type": "boots-control-plane"},
+                {"source": "telegram_gateway_autostart", "target": "chat_context_binding", "type": "restores-chat-route"},
+                {"source": "auto_run_pulse_gate", "target": "hermes_os_auto_run", "type": "monitors"},
+                {"source": "auto_run_pulse_gate", "target": "runbook", "type": "documents-repair"},
+                {"source": "auto_run_pulse_gate", "target": "telegram_greeting", "type": "notifies-blocked-reason"},
+                {
+                    "source": "auto_run_pulse_gate",
+                    "target": "obsidian_kb",
+                    "type": "syncs-evidence"
+                }
+                ,
+                {
+                    "source": "git_clean_history",
+                    "target": "git_lfs_setup",
+                    "type": "precedes"
+                }
+                ,
+                {
+                    "source": "git_clean_history",
+                    "target": "hermes_os_core",
+                    "type": "protects"
+                }
+                ,
+                {
+                    "source": "git_lfs_setup",
+                    "target": "hermes_os_core",
+                    "type": "protects"
+                }
+                ,
+                {
+                    "source": "hermes_os_auto_run",
+                    "target": "hermes_os_core",
+                    "type": "extends"
+                }
+                ,
+                {
+                    "source": "hermes_os_auto_run",
+                    "target": "user_profile",
+                    "type": "notifies"
+                }
+                ,
+                {
+                    "source": "workspace_upstream_pull",
+                    "target": "hermes_os_core",
+                    "type": "updates"
+                }
+                ,
+                {
+                    "source": "workspace_upstream_pull",
+                    "target": "hermes_workspace",
+                    "type": "updates"
+                }
+                ,
+                {
+                    "source": "obsidian_kb",
+                    "target": "hermes_os_core",
+                    "type": "extends"
+                }
+                ,
+                {
+                    "source": "obsidian_kb",
+                    "target": "fact_store",
+                    "type": "syncs-from"
+                }
+                ,
+                {
+                    "source": "obsidian_kb",
+                    "target": "workspace_upstream_pull",
+                    "type": "complements"
+                }
+                ,
+                // Fix unlinked facts
+                {"source": "fact_google_me_permissions", "target": "fact_store", "type": "governs"},
+                {"source": "fact_plus_star_opencode_removal", "target": "fact_store", "type": "fact_plus_star"},
+                {"source": "fact_rest_api_surface", "target": "fact_store", "type": "fact_plus_star"},
+                {"source": "fact_gemini_research_workflow", "target": "fact_store", "type": "fact_plus_star"},
+                {"source": "fact_checkpoint_anti_loop", "target": "fact_store", "type": "fact_plus_star"},
+                // Fix orphan-type nodes
+                {"source": "google_contacts_api", "target": "user_profile", "type": "contains-contacts"},
+                {"source": "orphan_tailscale", "target": "hermes_workspace", "type": "network-access"},
+                {"source": "orphan_named_tunnel", "target": "hermes_workspace", "type": "tunnel"},
+                // Boost low-connectivity nodes
+                {"source": "hermes_memory_system", "target": "hermes_os_core", "type": "extends"},
+                {"source": "rtk_global", "target": "skill_rtk_mes", "type": "global-policy"},
+                {"source": "omx_gpt53codex_fallback", "target": "omx_gpt54mini_primary", "type": "fallback-to"},
+                {"source": "session_state", "target": "hermes_os_core", "type": "manages-state"}
+                ,
+                // Runbook links
+                {"source": "runbook", "target": "hermes_os_core", "type": "documents"},
+                {"source": "runbook", "target": "fact_store", "type": "references"},
+                {"source": "runbook", "target": "git_clean_history", "type": "covers"},
+                {"source": "runbook", "target": "hermes_os_auto_run", "type": "schedules"},
+                {"source": "runbook", "target": "obsidian_kb", "type": "stored-in"}
             ]
         };
 
         function loadFactGraphSync() {
-            const api = window.__HERMES_FACT_GRAPH_API__ || (location.protocol === "file:" ? "http://127.0.0.1:9120/api/fact-graph" : "/api/fact-graph");
-            try {
-                const queries = ["fact_star", "fact_plus_star"];
-                const merged = { nodes: [], links: [], stats: { fact_count: 0, fact_star_count: 0, fact_plus_count: 0, fact_plus_star_count: 0 } };
-                const seenNodes = new Set();
-                const seenLinks = new Set();
-                queries.forEach(type => {
-                    const xhr = new XMLHttpRequest();
-                    xhr.open("GET", api + `?fact_type=${encodeURIComponent(type)}&limit=200`, false);
-                    xhr.send(null);
-                    if (xhr.status >= 200 && xhr.status < 300 && xhr.responseText) {
-                        const payload = JSON.parse(xhr.responseText);
+            const candidates = [];
+            if (window.__HERMES_FACT_GRAPH_API__) {
+                candidates.push(window.__HERMES_FACT_GRAPH_API__);
+            }
+            if (location.protocol === "file:") {
+                candidates.push("http://127.0.0.1:9130/api/fact-graph");
+            }
+            candidates.push("/api/fact-graph");
+
+            const queries = ["fact_star", "fact_plus_star"];
+            for (const api of [...new Set(candidates)]) {
+                try {
+                    const merged = { nodes: [], links: [], stats: { fact_count: 0, fact_star_count: 0, fact_plus_count: 0, fact_plus_star_count: 0 } };
+                    const seenNodes = new Set();
+                    const seenLinks = new Set();
+                    for (const type of queries) {
+                        const xhr = new XMLHttpRequest();
+                        xhr.open("GET", api + `?fact_type=${encodeURIComponent(type)}&limit=200`, false);
+                        xhr.send(null);
+                        if (xhr.status < 200 || xhr.status >= 300 || !xhr.responseText) {
+                            continue;
+                        }
+                        const contentType = xhr.getResponseHeader("content-type") || "";
+                        const body = xhr.responseText.trim();
+                        if (!contentType.includes("json") && !body.startsWith("{") && !body.startsWith("[")) {
+                            continue;
+                        }
+                        const payload = JSON.parse(body);
                         (payload.nodes || []).forEach(node => {
                             if (!seenNodes.has(node.id)) {
                                 merged.nodes.push(node);
@@ -827,20 +1087,70 @@
                             merged.stats.fact_plus_star_count += payload.stats.fact_plus_star_count || 0;
                         }
                     }
-                });
-                if (merged.nodes.length > 0) {
-                    return merged;
+                    if (merged.nodes.length > 0) {
+                        return merged;
+                    }
+                } catch (error) {
+                    // Try the next endpoint. Vite dev servers often return HTML for /api/* fallbacks.
                 }
-            } catch (error) {
-                console.warn("Fact graph backend unavailable:", error);
             }
             return null;
         }
+
+        function normalizeGraphNode(node) {
+            const typeColors = {
+                memory: "#a855f7",
+                fact_star: "#f43f5e",
+                fact_plus: "#f59e0b",
+                fact_plus_star: "#fb7185",
+                policy: "#e63946",
+                category: "#f97316",
+                skill: "#3b82f6",
+                project: "#10b981",
+                orphan: "#ef4444",
+                workflow: "#e74c3c",
+                system: "#9b59b6",
+                training_blueprint: "#14b8a6"
+            };
+            node.name = node.name || node.label || node.id;
+            node.desc = node.desc || node.description || node.type || "";
+            node.color = node.color || typeColors[node.type] || "#94a3b8";
+            node.size = node.size || 14;
+            return node;
+        }
+
+        function updateDashboardStats(factStats = null) {
+            const categoryCount = data.nodes.filter(n => n.type === "category").length;
+            const skillCount = data.nodes.filter(n => n.type === "skill").length;
+            const orphanCount = data.nodes.filter(n => n.orphan || n.type === "orphan").length;
+
+            const statMemory = document.getElementById("stat-memory");
+            const statFactStar = document.getElementById("stat-fact-star");
+            const statFactPlusStar = document.getElementById("stat-fact-plus-star");
+            const statCategories = document.getElementById("stat-categories");
+            const statSkills = document.getElementById("stat-skills");
+            const statOrphans = document.getElementById("stat-orphans");
+
+            const embeddedFactCount = data.nodes.filter(n => n.fact_type || n.fact_star || n.fact_plus).length;
+            const factCount = factStats?.fact_count || Math.max(parseInt(statMemory?.textContent || "0", 10) || 0, embeddedFactCount);
+            const factStarCount = factStats?.fact_star_count || data.nodes.filter(n => n.fact_type === "fact_star" || (n.fact_star && !n.fact_plus)).length;
+            const factPlusStarCount = factStats?.fact_plus_star_count || data.nodes.filter(n => n.fact_type === "fact_plus_star").length;
+
+            if (statMemory) statMemory.textContent = `${factCount} Facts`;
+            if (statFactStar) statFactStar.textContent = `${factStarCount} Fact*`;
+            if (statFactPlusStar) statFactPlusStar.textContent = `${factPlusStarCount} Fact+*`;
+            if (statCategories) statCategories.textContent = `${categoryCount} Categories`;
+            if (statSkills) statSkills.textContent = `${skillCount} Skills`;
+            if (statOrphans) statOrphans.textContent = `${orphanCount} Missing`;
+        }
+
+        data.nodes.forEach(normalizeGraphNode);
 
         const backendFactGraph = loadFactGraphSync();
         if (backendFactGraph && Array.isArray(backendFactGraph.nodes)) {
             const existingNodes = new Set(data.nodes.map(n => n.id));
             backendFactGraph.nodes.forEach(node => {
+                normalizeGraphNode(node);
                 if (!existingNodes.has(node.id)) {
                     data.nodes.push(node);
                     existingNodes.add(node.id);
@@ -854,17 +1164,9 @@
                     existingLinks.add(key);
                 }
             });
-            const factPlusStarCount = data.nodes.filter(n => n.fact_type === "fact_plus_star").length;
-            const factStarCount = data.nodes.filter(n => n.fact_star || n.fact_type === "fact_star").length;
-            const factCount = data.nodes.filter(n => n.fact_type || n.fact_star || n.fact_plus).length;
-            const statMemory = document.getElementById("stat-memory");
-            const statFactStar = document.getElementById("stat-fact-star");
-            const statFactPlusStar = document.getElementById("stat-fact-plus-star");
-            if (statMemory) statMemory.textContent = `${factCount} Facts`;
-            if (statFactStar) statFactStar.textContent = `${factStarCount} Fact*`;
-            if (statFactPlusStar) statFactPlusStar.textContent = `${factPlusStarCount} Fact+*`;
             console.log(`🧠 Loaded ${backendFactGraph.nodes.length} Fact* / Fact+* nodes from backend`);
         }
+        updateDashboardStats(backendFactGraph?.stats || null);
 
         // Setup SVG with window dimensions
         const width = window.innerWidth;
@@ -872,10 +1174,10 @@
         const svg = d3.select("#graph")
             .attr("width", width)
             .attr("height", height);
-        
+
         // Add defs for gradients
         const defs = svg.append("defs");
-        
+
         // Glow filter
         const filter = defs.append("filter")
             .attr("id", "glow")
@@ -883,15 +1185,15 @@
             .attr("y", "-50%")
             .attr("width", "200%")
             .attr("height", "200%");
-        
+
         filter.append("feGaussianBlur")
             .attr("stdDeviation", "3")
             .attr("result", "coloredBlur");
-        
+
         const feMerge = filter.append("feMerge");
         feMerge.append("feMergeNode").attr("in", "coloredBlur");
         feMerge.append("feMergeNode").attr("in", "SourceGraphic");
-        
+
         // Zoom behavior
         const g = svg.append("g");
         const zoom = d3.zoom()
@@ -900,14 +1202,14 @@
                 g.attr("transform", event.transform);
             });
         svg.call(zoom);
-        
+
         // Simulation
         let simulation = d3.forceSimulation(data.nodes)
             .force("link", d3.forceLink(data.links).id(d => d.id).distance(100))
             .force("charge", d3.forceManyBody().strength(-300))
             .force("center", d3.forceCenter(width / 2, height / 2))
             .force("collision", d3.forceCollide().radius(d => d.size + 10));
-        
+
         // Draw links
         const link = g.append("g")
             .selectAll("line")
@@ -918,7 +1220,7 @@
             .attr("stroke-width", d => d.dashed ? 1.5 : 2)
             .attr("stroke-dasharray", d => d.dashed ? "5,5" : "none")
             .attr("marker-end", "url(#arrow)");
-        
+
         // Draw nodes
         const node = g.append("g")
             .selectAll("circle")
@@ -934,7 +1236,7 @@
                 .on("start", dragstarted)
                 .on("drag", dragged)
                 .on("end", dragended));
-        
+
         // Add labels
         const labels = g.append("g")
             .selectAll("text")
@@ -945,10 +1247,10 @@
             .attr("dy", ".35em")
             .text(d => d.name)
             .style("opacity", d => d.type === "category" || d.type === "memory" ? 1 : 0.8);
-        
+
         // Tooltip
         const tooltip = d3.select("#tooltip");
-        
+
         node.on("mouseover", (event, d) => {
             tooltip.style("opacity", 1)
                 .style("left", (event.pageX + 10) + "px")
@@ -965,7 +1267,7 @@
             showSidebar(d);
             event.stopPropagation();
         });
-        
+
         // Update positions
         simulation.on("tick", () => {
             link
@@ -973,39 +1275,39 @@
                 .attr("y1", d => d.source.y)
                 .attr("x2", d => d.target.x)
                 .attr("y2", d => d.target.y);
-            
+
             node
                 .attr("cx", d => d.x)
                 .attr("cy", d => d.y);
-            
+
             labels
                 .attr("x", d => d.x)
                 .attr("y", d => d.y);
         });
-        
+
         // Drag functions
         function dragstarted(event, d) {
             if (!event.active) simulation.alphaTarget(0.3).restart();
             d.fx = d.x;
             d.fy = d.y;
         }
-        
+
         function dragged(event, d) {
             d.fx = event.x;
             d.fy = event.y;
         }
-        
+
         function dragended(event, d) {
             if (!event.active) simulation.alphaTarget(0);
             d.fx = null;
             d.fy = null;
         }
-        
+
         // Sidebar
         function showSidebar(d) {
             const sidebar = document.getElementById("sidebar");
             const content = document.getElementById("sidebar-content");
-            
+
             let html = `
                 <h2>${d.name}</h2>
                 <div class="detail-item">
@@ -1019,7 +1321,7 @@
                     <p><strong>Size:</strong> ${d.size}</p>
                 </div>
             `;
-            
+
             if (d.fact_star || d.fact_type === "fact_star") {
                 const scope = Array.isArray(d.impact_scope) ? d.impact_scope.join(", ") : (d.impact_scope || "-");
                 html += `
@@ -1048,7 +1350,7 @@
                     </div>
                 `;
             }
-            
+
             if (d.orphan) {
                 html += `
                     <div class="detail-item" style="border-color: #ef4444;">
@@ -1057,7 +1359,7 @@
                     </div>
                 `;
             }
-            
+
             // Find connected nodes
             const connected = data.links.filter(l => l.source.id === d.id || l.target.id === d.id);
             if (connected.length > 0) {
@@ -1068,17 +1370,17 @@
                 });
                 html += `</div>`;
             }
-            
+
             content.innerHTML = html;
             sidebar.classList.add("active");
         }
-        
+
         function closeSidebar() {
             document.getElementById("sidebar").classList.remove("active");
         }
-        
+
         svg.on("click", () => closeSidebar());
-        
+
         // Search functionality
         document.getElementById("search").addEventListener("input", (e) => {
             const term = e.target.value.toLowerCase();
@@ -1088,17 +1390,17 @@
                 link.style("opacity", 0.4);
                 return;
             }
-            
+
             node.style("opacity", d => d.name.toLowerCase().includes(term) || d.id.toLowerCase().includes(term) ? 1 : 0.1);
             labels.style("opacity", d => d.name.toLowerCase().includes(term) || d.id.toLowerCase().includes(term) ? 1 : 0.1);
             link.style("opacity", 0.1);
         });
-        
+
         // Control functions
         function resetZoom() {
             svg.transition().duration(750).call(zoom.transform, d3.zoomIdentity);
         }
-        
+
         let physicsEnabled = true;
         function togglePhysics() {
             physicsEnabled = !physicsEnabled;
@@ -1108,7 +1410,7 @@
                 simulation.stop();
             }
         }
-        
+
         function exportGraph() {
             const graphData = {
                 nodes: data.nodes.map(n => ({
@@ -1137,14 +1439,14 @@
                 totalNodes: data.nodes.length,
                 totalLinks: data.links.length
             };
-            
+
             const blob = new Blob([JSON.stringify(graphData, null, 2)], {type: 'application/json'});
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
             a.download = `hermes-memory-graph-${new Date().toISOString().split('T')[0]}.json`;
             a.click();
         }
-        
+
         // Highlight connected nodes on hover
         node.on("mouseenter", function(event, d) {
             const connected = new Set();
@@ -1153,23 +1455,23 @@
                 if (l.target.id === d.id) connected.add(l.source.id);
             });
             connected.add(d.id);
-            
+
             node.style("opacity", n => connected.has(n.id) ? 1 : 0.2);
             labels.style("opacity", n => connected.has(n.id) ? 1 : 0.2);
-            link.style("stroke-opacity", l => 
+            link.style("stroke-opacity", l =>
                 l.source.id === d.id || l.target.id === d.id ? 1 : 0.1);
         }).on("mouseleave", () => {
             node.style("opacity", 1);
             labels.style("opacity", d => d.type === "category" || d.type === "memory" ? 1 : 0.8);
             link.style("stroke-opacity", 0.4);
         });
-        
+
         // Initial animation
         g.style("opacity", 0)
             .transition()
             .duration(1000)
             .style("opacity", 1);
-        
+
         console.log("🧠 Hermes Memory Graph loaded!");
         console.log(`📊 Stats: ${data.nodes.length} nodes, ${data.links.length} links`);
     </script>

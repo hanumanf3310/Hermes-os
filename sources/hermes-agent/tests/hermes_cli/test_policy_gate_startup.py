@@ -1,3 +1,4 @@
+import asyncio
 import sys
 from unittest.mock import MagicMock
 
@@ -36,6 +37,40 @@ def test_gateway_main_fails_closed_when_policy_gate_fails(monkeypatch, capsys):
 
     with pytest.raises(SystemExit) as excinfo:
         gateway_run.main()
+
+    captured = capsys.readouterr()
+    assert excinfo.value.code == 1
+    assert "merged policy hard gate failed" in captured.err
+    assert "policy invalid" in captured.err
+
+
+def test_gateway_start_fails_closed_when_policy_gate_fails(monkeypatch, capsys):
+    import gateway.run as gateway_run
+
+    def fail_gate():
+        raise PolicyValidationError(["policy invalid"])
+
+    monkeypatch.setattr("hermes_cli.policy_gate.assert_merged_policy_gate", fail_gate)
+
+    with pytest.raises(SystemExit) as excinfo:
+        asyncio.run(gateway_run.start_gateway())
+
+    captured = capsys.readouterr()
+    assert excinfo.value.code == 1
+    assert "merged policy hard gate failed" in captured.err
+    assert "policy invalid" in captured.err
+
+
+def test_run_agent_main_fails_closed_when_policy_gate_fails(monkeypatch, capsys):
+    import run_agent
+
+    def fail_gate():
+        raise PolicyValidationError(["policy invalid"])
+
+    monkeypatch.setattr("hermes_cli.policy_gate.assert_merged_policy_gate", fail_gate)
+
+    with pytest.raises(SystemExit) as excinfo:
+        run_agent.main(list_tools=True)
 
     captured = capsys.readouterr()
     assert excinfo.value.code == 1

@@ -955,6 +955,22 @@ def list_authenticated_providers(
                     if m and m not in models_list:
                         models_list.append(m)
 
+            # Ollama Launch is a docs-driven virtual provider. A config subset
+            # or extra model must augment, not replace, the recommended cloud
+            # models that Boss expects in the picker.
+            if ep_name == "ollama-launch":
+                recommended = list(curated.get("ollama-launch", []))
+                merged_models = []
+                ordered_candidates = []
+                if default_model:
+                    ordered_candidates.append(default_model)
+                ordered_candidates.extend(recommended)
+                ordered_candidates.extend(models_list)
+                for m in ordered_candidates:
+                    if m and m not in merged_models:
+                        merged_models.append(m)
+                models_list = merged_models
+
             # Try to probe /v1/models if URL is set (but don't block on it)
             # For now just show what we know from config
             results.append({
@@ -1009,5 +1025,3 @@ def list_authenticated_providers(
     results.sort(key=lambda r: (not r["is_current"], -r["total_models"]))
 
     return results
-
-

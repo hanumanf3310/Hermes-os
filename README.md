@@ -4,13 +4,16 @@ This repository contains a consolidated backup of Hermes-related source, selecte
 
 ## Layout
 - `sources/hermes-agent/`
+- `sources/hermes-os-runtime/`
 - `sources/hermes-workspace/`
-- `skills/`
+- `skills/hermes-os/`
 - `bin/`
+- `scripts/`
 - `thclaws/`
 - `restore/`
 
 ## Restore notes
 - Secrets are intentionally excluded.
 - Runtime caches, logs, sessions, and build artifacts are excluded.
-- Use the source trees and wrappers here to rebuild the working environment.
+- The live Hermes OS skill namespace is captured, with cache folders removed.
+- Use `restore/RESTORE_GUIDE.md` first. It documents the restore order, Context7 MCP config, smoke tests, and rollback safety steps for the current restore-ready checkpoint.

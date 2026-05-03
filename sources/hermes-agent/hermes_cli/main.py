@@ -4509,12 +4509,9 @@ def cmd_logs(args):
 
 def main():
     """Main entry point for hermes CLI."""
-    try:
-        from hermes_cli.policy_gate import assert_merged_policy_gate
-        assert_merged_policy_gate()
-    except Exception as exc:
-        print(f"Error: merged policy hard gate failed: {exc}", file=sys.stderr)
-        sys.exit(1)
+    from hermes_cli.policy_gate import enforce_merged_policy_gate
+
+    enforce_merged_policy_gate()
 
     parser = argparse.ArgumentParser(
         prog="hermes",

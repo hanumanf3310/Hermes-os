@@ -10,9 +10,11 @@ from tools.merged_policy_validator import (
     validate_policy_file,
 )
 
-POLICY_PATH = Path("/home/hanuman3310/hermes-agent/website/docs/reference/merged-hard-gate-policy.yaml")
-SCHEMA_PATH = Path("/home/hanuman3310/hermes-agent/website/docs/reference/merged-hard-gate-policy.schema.json")
-CARD_PATH = Path("/home/hanuman3310/hermes-agent/website/docs/reference/merged-hard-gate-policy-card.md")
+REPO_ROOT = Path(__file__).resolve().parents[2]
+REFERENCE_DIR = REPO_ROOT / "website" / "docs" / "reference"
+POLICY_PATH = REFERENCE_DIR / "merged-hard-gate-policy.yaml"
+SCHEMA_PATH = REFERENCE_DIR / "merged-hard-gate-policy.schema.json"
+CARD_PATH = REFERENCE_DIR / "merged-hard-gate-policy-card.md"
 
 
 def test_validate_policy_file_reports_valid_source_of_truth():

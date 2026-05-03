@@ -9248,6 +9248,10 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
                  Useful for systemd services to avoid restart-loop deadlocks
                  when the previous process hasn't fully exited yet.
     """
+    from hermes_cli.policy_gate import enforce_merged_policy_gate
+
+    enforce_merged_policy_gate()
+
     # ── Duplicate-instance guard ──────────────────────────────────────
     # Prevent two gateways from running under the same HERMES_HOME.
     # The PID file is scoped to HERMES_HOME, so future multi-profile
@@ -9424,6 +9428,10 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
 
 def main():
     """CLI entry point for the gateway."""
+    from hermes_cli.policy_gate import enforce_merged_policy_gate
+
+    enforce_merged_policy_gate()
+
     import argparse
 
     parser = argparse.ArgumentParser(description="Hermes Gateway - Multi-platform messaging")

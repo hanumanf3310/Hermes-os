@@ -10700,6 +10700,10 @@ def main(
     Toolset Examples:
         - "research": Web search, extract, crawl + vision tools
     """
+    from hermes_cli.policy_gate import enforce_merged_policy_gate
+
+    enforce_merged_policy_gate()
+
     print("🤖 AI Agent with Tool Calling")
     print("=" * 50)
 

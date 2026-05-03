@@ -1,71 +1,267 @@
 {
-  "generated_at_bangkok": "2026-05-02T19:58:50.706445+07:00",
+  "generated_at_bangkok": "2026-05-03T21:13:20+07:00",
   "repo_url": "https://github.com/hanumanf3310/Hermes-os.git",
-  "snapshot_kind": "restore-ready Hermes OS checkpoint before risky test/venv work",
+  "checkpoint_branch": "hermes-os-checkpoint-20260503-context7-restore",
+  "snapshot_kind": "restore-ready Hermes OS checkpoint after Context7 MCP, skill bindings, dashboard refresh, gateway/model/policy hardening",
+  "base_head_before_snapshot": "fc02195e3555e1170a731f41eaca7863df441557",
   "included": {
-    "sources/hermes-agent": "dev checkout plus live runtime overlays for restore-critical Gateway/policy/status files; runtime/build noise excluded",
-    "sources/hermes-workspace": "workspace snapshot including memory graph dashboard; runtime/build noise excluded",
-    "bin": [
-      "hermes-os",
-      "hermes-off",
-      "hermes-status",
-      "hermes-workspace",
-      "hermes-memory-graph",
-      "hermes-fact-validate",
-      "hermes-fact-migrate",
-      "preupdate-hermes",
-      "preupdate-hermes-json",
-      "preupdate-hermes-summary",
-      "hermes"
-    ],
-    "skills": {
-      "selected_restore_skills": [
-        "hermes-os/hermes-os",
-        "hermes-os/hermes-os-blueprint",
-        "hermes-os/hermes-os-communication-protocol-v2-5",
-        "rtk-mes",
-        "software-development/hermes-os-github-backup-snapshot",
-        "software-development/systematic-debugging",
-        "software-development/requesting-code-review",
-        "devops/dashboard-html-safe-update",
-        "devops/dashboard-working-path-map",
-        "note-taking/fact-store-evidence-reporting",
-        "hermes-code-graph/hermes-code-graph"
+    "sources/hermes-agent": "Hermes Agent core with Hermes OS CLI/gateway/model/policy restore changes and focused tests.",
+    "sources/hermes-os-runtime": "Live ~/.hermes/os nerve/control runtime code, excluding __pycache__ and fleet runtime task data.",
+    "sources/hermes-workspace": "Hermes Workspace dashboard files including memory graph refresh.",
+    "skills/hermes-os": {
+      "mode": "full live Hermes OS skill namespace with caches removed",
+      "skill_dirs": [
+        "auto-memory-audit-cron",
+        "bin",
+        "context7-docs-evidence-nerve",
+        "context7-skill-binding-manifest",
+        "external-agent-skill-radar",
+        "external-repo-analysis-for-os-adoption",
+        "fact-store-factstar-governance",
+        "hermes-desktop-launcher",
+        "hermes-extension-venv-setup",
+        "hermes-learning-manual-ingest-workflow",
+        "hermes-memory-index-standard",
+        "hermes-os-blueprint",
+        "hermes-os-communication-protocol",
+        "hermes-os-communication-protocol-v2",
+        "hermes-os-communication-protocol-v2-5",
+        "hermes-os-context-mode-safe-integration",
+        "hermes-os-memory-system-integration",
+        "hermes-restore-recall-workflow",
+        "hermes-session-manager",
+        "layered-context-architecture-review",
+        "obsidian-kb-layer-integration",
+        "policy-compliance-checker",
+        "project-glossary-ddd",
+        "references",
+        "scripts",
+        "v3"
       ],
-      "note": "Narrow selected skill snapshot only; broad skill dump excluded to avoid secrets/noise."
-    }
+      "file_count": 41,
+      "note": "Captured because restore must return Hermes OS to the current working skill/control vocabulary, including Context7, Obsidian, memory/context, policy, launcher, and v3 readiness skills."
+    },
+    "bin": "Local Hermes wrappers and helper commands.",
+    "scripts": [
+      "scripts/validate-dashboard-graph.py"
+    ],
+    "restore": [
+      "BOOTSTRAP.md",
+      "RESTORE_GUIDE.md",
+      "CURRENT_STATE_20260503.md",
+      "MANIFEST.json"
+    ]
   },
-  "restore_critical_files": [
-    "sources/hermes-agent/hermes_cli/commands.py",
-    "sources/hermes-agent/cli.py",
-    "sources/hermes-agent/gateway/run.py",
-    "sources/hermes-agent/gateway/platforms/base.py",
-    "sources/hermes-agent/hermes_cli/hermes_os_format.py",
-    "sources/hermes-agent/website/docs/reference/merged-hard-gate-policy.yaml",
-    "sources/hermes-agent/website/docs/reference/merged-hard-gate-policy.schema.json",
-    "sources/hermes-agent/tools/merged_policy_validator.py",
-    "sources/hermes-workspace/memory-graph/dashboard.html"
-  ],
   "excluded": [
     "Repo.env",
-    ".env / secrets / tokens",
+    "~/.hermes/.env",
+    "API keys / bot tokens / passwords / provider credentials",
     "logs",
     "sessions",
     "__pycache__",
+    ".pytest_cache",
     "node_modules",
     "venv/.venv",
-    "target",
+    "fleet runtime task data",
     "dist/build artifacts",
     "runtime caches",
-    "reports/update-safety artifacts over GitHub size limit",
     "large archives (*.tar.gz)",
-    "broad skill cache/index dump",
-    "skills with embedded credentials/examples not required for Hermes OS restore"
+    "broad non-Hermes skill cache/index dump"
   ],
+  "restore_evidence_expected": {
+    "hermes_os_status": [
+      "Gateway: running",
+      "RTK: Enabled",
+      "Context7: Ready (external docs evidence)"
+    ],
+    "context7_mcp": [
+      "Connected",
+      "resolve-library-id",
+      "query-docs"
+    ],
+    "gateway_service": [
+      "enabled",
+      "active"
+    ],
+    "dashboard": {
+      "nodes": 118,
+      "links": 249,
+      "connected_components": 1,
+      "ok": true
+    },
+    "dashboard_http": "200 95388 on localhost:3300/dashboard.html for this snapshot"
+  },
+  "context7_config_snippet": {
+    "mcp_servers": {
+      "context7": {
+        "connect_timeout": 30,
+        "enabled": true,
+        "timeout": 120,
+        "url": "https://mcp.context7.com/mcp"
+      }
+    }
+  },
+  "verification_performed": [
+    {
+      "name": "git diff --check",
+      "result": "passed"
+    },
+    {
+      "name": "restore/MANIFEST.json parse",
+      "result": "passed"
+    },
+    {
+      "name": "changed Hermes Agent py_compile with live venv",
+      "result": "passed"
+    },
+    {
+      "name": "focused pytest",
+      "result": "11 passed in 6.17s"
+    },
+    {
+      "name": "dashboard validator memory-graph",
+      "result": "118 nodes / 249 links / ok true"
+    },
+    {
+      "name": "dashboard validator public",
+      "result": "118 nodes / 249 links / ok true"
+    },
+    {
+      "name": "Context7 MCP live test",
+      "result": "connected; 2 tools discovered"
+    },
+    {
+      "name": "Telegram gateway service",
+      "result": "enabled and active"
+    },
+    {
+      "name": "secret scan",
+      "result": "0 potential findings"
+    },
+    {
+      "name": "large file scan",
+      "result": "0 files over threshold"
+    }
+  ],
+  "secret_scan": {
+    "scope": "changed/untracked repo files, live ~/.hermes/os runtime files, and full live skills/hermes-os namespace copied into this snapshot",
+    "potential_secret_findings": 0,
+    "note": "Secrets are excluded; recreate local credentials outside Git."
+  },
+  "large_file_scan": {
+    "threshold": "50M repo scan / 10M live skill namespace scan",
+    "findings": 0
+  },
+  "git_lfs": {
+    "installed_version": "git-lfs/3.7.1",
+    "tracked_patterns": []
+  },
   "policy_sha256": "fc971d202272d9b01092b85d66f92a9a20c510f856158c6a1f4e6d83b303d8c7",
-  "gateway_contract_files": [
-    "sources/hermes-agent/gateway/platforms/base.py",
-    "sources/hermes-agent/gateway/run.py"
+  "restore_critical_files": [
+    "README.md",
+    "bin/hermes-os",
+    "bin/hermes-workspace",
+    "restore/BOOTSTRAP.md",
+    "restore/CURRENT_STATE_20260503.md",
+    "restore/RESTORE_GUIDE.md",
+    "scripts/validate-dashboard-graph.py",
+    "skills/hermes-os/SKILL.md",
+    "skills/hermes-os/context7-docs-evidence-nerve/SKILL.md",
+    "skills/hermes-os/context7-skill-binding-manifest/SKILL.md",
+    "sources/hermes-agent/cli.py",
+    "sources/hermes-agent/gateway/run.py",
+    "sources/hermes-agent/hermes_cli/main.py",
+    "sources/hermes-agent/hermes_cli/model_switch.py",
+    "sources/hermes-agent/hermes_cli/policy_gate.py",
+    "sources/hermes-agent/run_agent.py",
+    "sources/hermes-agent/tests/hermes_cli/test_model_picker_parity_restore.py",
+    "sources/hermes-agent/tests/hermes_cli/test_policy_gate_startup.py",
+    "sources/hermes-agent/tests/tools/test_merged_policy_validator.py",
+    "sources/hermes-agent/tools/merged_policy_validator.py",
+    "sources/hermes-agent/website/docs/reference/merged-hard-gate-policy.schema.json",
+    "sources/hermes-agent/website/docs/reference/merged-hard-gate-policy.yaml",
+    "sources/hermes-os-runtime/autoload.py",
+    "sources/hermes-os-runtime/cli.py",
+    "sources/hermes-os-runtime/core/response_formatter.py",
+    "sources/hermes-os-runtime/fleet/core/fleet_orchestrator_client.py",
+    "sources/hermes-os-runtime/fleet/core/orchestrator.py",
+    "sources/hermes-os-runtime/hermes_os.py",
+    "sources/hermes-os-runtime/integrations/telegram_bridge.py",
+    "sources/hermes-os-runtime/skills/hermes-fleet-bridge/SKILL.md",
+    "sources/hermes-workspace/memory-graph/dashboard.html",
+    "sources/hermes-workspace/public/dashboard.html"
   ],
-  "test_caveat": "Full pytest intentionally skipped for this checkpoint because Boss asked to avoid risky items 3 and 4; prior wrapper caveat: live venv lacks pip."
+  "file_sha256": {
+    "README.md": "8525d5f5721abd33cab886ce0f0cfc1468390c04f34252203e952af4395ef0b5",
+    "bin/hermes-os": "f42077a4211729301ec115bc0504a5e29fcd813802f029eca1023910d7e0c50a",
+    "bin/hermes-workspace": "993a3366d06951b95209d1e7f6c13d30fb548b900dd7fcc584600a3b1565bec6",
+    "restore/BOOTSTRAP.md": "1f2ecde2b8c0511f762b58912bb3a737b34181ca2fa246f3acd6b8978f79de96",
+    "restore/CURRENT_STATE_20260503.md": "e8dfacbe953eafd77903a712ee37b5ebe8c960c133d548198bfba6fa6014c5db",
+    "restore/RESTORE_GUIDE.md": "305eb3cf607f4efc53bcd1cd23052f84ab30f3a5bf2d52f924a86b3f5d7f81f6",
+    "scripts/validate-dashboard-graph.py": "5fe7433d8ff2e0f7933245b1dc36193b5de5a355bef0491fa362b1df30977e03",
+    "skills/hermes-os/SKILL.md": "9f7b530b94ee68981ebe8715a9760c5dce9386d47eb9cd15237465a4d3a2760a",
+    "skills/hermes-os/auto-memory-audit-cron/SKILL.md": "64819d73e24322d4dd204133617784631759cd2f17cbb40969750c76294fe3dd",
+    "skills/hermes-os/bin/hermes-os": "3819c61e811f0c33731aa21e8ad44931fd0599367e5289da19e0ec6d3c9a2e0a",
+    "skills/hermes-os/context7-docs-evidence-nerve/SKILL.md": "3c345b9d23e88563714cc786db6cb4e00a1f0f307b6bdb6cc8dd458ece0cfccd",
+    "skills/hermes-os/context7-skill-binding-manifest/SKILL.md": "ae97ddced351e81610f63315e31e1dd20b1ce8099ed0fd3dbc78ad651cdee7c8",
+    "skills/hermes-os/external-agent-skill-radar/SKILL.md": "374d0a0dcb913b8ff732fff216733b099d4c949dd031f82e24856c6a24610873",
+    "skills/hermes-os/external-repo-analysis-for-os-adoption/SKILL.md": "0fde31dc10de5217e1f94755dee11e8594836301e3b663a0dab24aecb829f16a",
+    "skills/hermes-os/fact-store-factstar-governance/SKILL.md": "2227700850a5ce22f11a4ff053159dbcea8f1099a3b7d5444c77bbcf60fc9895",
+    "skills/hermes-os/hermes-desktop-launcher/SKILL.md": "5e226fa06261a94ee9aa9e7685d0d0feef04e90ece24d7b03eb287e5f49628ed",
+    "skills/hermes-os/hermes-extension-venv-setup/SKILL.md": "8891fbd53a16bc36b512ccb0155f35cf78562f57a08460e0607fa4230ef115b0",
+    "skills/hermes-os/hermes-extension-venv-setup/templates/create-rag-venv.sh": "9612fd5f5bf6c4a804c07279f39b6a0714409f5dc7886159a3b66ef0a033ffc4",
+    "skills/hermes-os/hermes-learning-manual-ingest-workflow/SKILL.md": "cb2da87e60a27552eb45cc2b562e692b9af6c9c8c143564c21aaad12f95ccb4e",
+    "skills/hermes-os/hermes-memory-index-standard/SKILL.md": "3d7f25c7a7a5e0fd1d00a1f0a97f0a6982ad66c6b2c6df81e216cc5056edec8d",
+    "skills/hermes-os/hermes-os-blueprint/SKILL.md": "4f87c4fbd9faf885baeaec4ce57ae31273fc46c679ae9d546371bfb18c184f12",
+    "skills/hermes-os/hermes-os-blueprint/references/blueprint-index.md": "794541949b92c7158018cdd300ff56c47c560cfd953888a350e7a8b094dc5f47",
+    "skills/hermes-os/hermes-os-communication-protocol-v2-5/SKILL.md": "6eb664d02ec97d60b303fa5c30baceb41ef9ababbda435d287334bb230ea7a34",
+    "skills/hermes-os/hermes-os-communication-protocol-v2-5/references/phase3_implementation.md": "c5415fbe9e8e2f26469aca78ceec5db650a264a0819b117ec1f20ac3f757c083",
+    "skills/hermes-os/hermes-os-communication-protocol-v2/SKILL.md": "0efc667528a25ae1869914cc3866813a28cdaa28028cfb32c91eeb7bfbeabf99",
+    "skills/hermes-os/hermes-os-communication-protocol/SKILL.md": "1c038c144491986be1331f4b18d847d416ddbd0c9109710e700dbc120deaaa4f",
+    "skills/hermes-os/hermes-os-communication-protocol/references/learnings-and-rationale.md": "fcd5ed9776cd79ddca1246cf7dcb0139ddd99e0704c3834b8f4d78195dcb3e30",
+    "skills/hermes-os/hermes-os-context-mode-safe-integration/SKILL.md": "54e2d0bf766a160f5fb713386b05798d920636f4abb4ed9ad98fd52530541580",
+    "skills/hermes-os/hermes-os-memory-system-integration/SKILL.md": "7591f4ceb1158fda9aa583303d795b5e819b1c2003a9195b497183bbfe965a03",
+    "skills/hermes-os/hermes-restore-recall-workflow/SKILL.md": "07c1dd7e915b2623238b45f7dd34d0d9c257532e604e09549d8b95ddf7200a60",
+    "skills/hermes-os/hermes-session-manager/SKILL.md": "98ecc1de71efb39692decb715526ad32f496d54a2fc964760d33ca32daef9b8f",
+    "skills/hermes-os/layered-context-architecture-review/SKILL.md": "b630ecb73a4cc17c708e9403e11a6e8c3ad0778ad450d221f37436eb28070c46",
+    "skills/hermes-os/obsidian-kb-layer-integration/SKILL.md": "1fb20609c306c36d6623a97fd53e0962d0550b19831556a8bcc93f5729782a6e",
+    "skills/hermes-os/policy-compliance-checker/SKILL.md": "26aac52071f39411602005c7d9341a6fb97b7ae6259d37274abbd95721e9cb78",
+    "skills/hermes-os/project-glossary-ddd/SKILL.md": "7a1bec5ee5b5f9b37f82c71dca5b0bece6e9bf806e9dc2ba5319c1dc1e3f2811",
+    "skills/hermes-os/references/gateway-pycache-reload-caveat.md": "ab095298c8e40dcfde7384c6e6442797b0fef0ccbd6940d8126d2c8c65c01bb6",
+    "skills/hermes-os/v3/analyzer.py": "d36286a40cb0f39e42d77bc5935e3e479d08816205c14dc2114e16c81d911d01",
+    "skills/hermes-os/v3/router.py": "2fb95749ad737ad4015898352aaa34b16c45eeb8b3c87a66b593b1c5b0cc50e7",
+    "skills/hermes-os/v3/sample_tasks.json": "515e48cf81f27f7cf545f833982b51b7d249c211cd32448217d78a31b246908b",
+    "skills/hermes-os/v3/test_analyzer.py": "c176c1699e2ba420d7c2979ca02034e15ed7cc5167d60f17162d6ad15a000a15",
+    "skills/hermes-os/v3/test_feedback_capture.py": "b92125d856e5efaeede85a339f142d562c8a8b90bc568b42b03fc5128cde4ccc",
+    "skills/hermes-os/v3/test_hermes_os_metrics_command_path_contract.py": "83ec9964a3c920a1483cb55c9429610c4f3b2be87186e60d70097e3efa24bfd7",
+    "skills/hermes-os/v3/test_learning_policy_store.py": "5b6334df9db74f60a163f39cb9bb3f14bb765b8e7b1b9120976dc0c967e8b0d4",
+    "skills/hermes-os/v3/test_readiness_command_path_contract.py": "4d0cab771b3a9b24c420517f17d0d1cadd57d10fc0a47f523320af4b17d468e0",
+    "skills/hermes-os/v3/test_readiness_formatter_contract.py": "f309d2586b3e5bbda519a55560bc65b77f3d089d7002f96070cdc22f8779e17c",
+    "skills/hermes-os/v3/test_router_smoke.py": "face95e34536fd73ee78cda9d15288c761738a55fccfd89071e4c7d084ef30fb",
+    "skills/hermes-os/v3/test_status_readiness_policy_apply_contract.py": "289abb572c6c5c45b339ace4b1f22a9e9b3cd4c65f1f6af9862640ddb92b89d9",
+    "skills/hermes-os/v3/test_telemetry_foundation.py": "44001a6458f797d9a06aeb90645f038fdc06490f75df77df920efbbf004910fd",
+    "sources/hermes-agent/cli.py": "d3665a72e1b05fe2f22a6abcfc9eeec1578b10c3d9aef9829791e25278075c9f",
+    "sources/hermes-agent/gateway/run.py": "4b1214cc239d79085eb6e93737763c094140110723dbe9e555c7dbec573fcec2",
+    "sources/hermes-agent/hermes_cli/main.py": "1d31c7e666948cec19d7f8cd7a5f13190bab4a6d8f8e23901b73b00f47b4748f",
+    "sources/hermes-agent/hermes_cli/model_switch.py": "0b423d0c0d74d34cc1c479198aa3723b9c5c2ba03e5b0d3d036b0c8aaf82ecba",
+    "sources/hermes-agent/hermes_cli/policy_gate.py": "77dfa3bbd737b20dda5a41269230e901cc7134e0ccc471bf84f09ffd2afb7e98",
+    "sources/hermes-agent/run_agent.py": "a8032f3fbb31a4f818ac1b0f204582a1603f82ffeb0dc4cfc4dd8559ac7713a6",
+    "sources/hermes-agent/tests/hermes_cli/test_model_picker_parity_restore.py": "79b7bf3a5f025e4326eb6517715b4c7c341e2d2fd76514ca8fb2b981eecbee8e",
+    "sources/hermes-agent/tests/hermes_cli/test_policy_gate_startup.py": "939800c00d2fbf463f13e1963e4ef523382f0d3dd82b14400cd54a058bec8cb3",
+    "sources/hermes-agent/tests/tools/test_merged_policy_validator.py": "6f0c17c6302a287b24b11e88eed7282ada8750a18b31bf19944f4734d8a7312a",
+    "sources/hermes-agent/tools/merged_policy_validator.py": "6f61c1c60b2181db48e4ca15700c7214f524f00ee413321f6c28fb7ea4f1fa41",
+    "sources/hermes-agent/website/docs/reference/merged-hard-gate-policy.schema.json": "9c613cd81840c04ea650fda75980749f6166c444792ab518da35ab8a3eb10644",
+    "sources/hermes-agent/website/docs/reference/merged-hard-gate-policy.yaml": "fc971d202272d9b01092b85d66f92a9a20c510f856158c6a1f4e6d83b303d8c7",
+    "sources/hermes-os-runtime/autoload.py": "5adc5db487c8d5a38058b5223a1236572db879459728b5b8faeebc8024a96410",
+    "sources/hermes-os-runtime/cli.py": "25ca4e72a840ee269d151261bd6cfe84c325e271366bf1148755d7f10941cb13",
+    "sources/hermes-os-runtime/core/response_formatter.py": "4fbb8ae7bd40092278cb85ecc51e7f650e0e238e1befadc19b4704a4c4dcdc6a",
+    "sources/hermes-os-runtime/fleet/core/fleet_orchestrator_client.py": "c627f93c3da3e1b0486361e5d5fd0dd069c0a131e40ae2a035912453588096f6",
+    "sources/hermes-os-runtime/fleet/core/orchestrator.py": "a042a9237ca89441f55024da324f332d2d6f35644e5af829baf91cecc54a70b5",
+    "sources/hermes-os-runtime/hermes_os.py": "a354542c29b65c2515d58fab9cdf5fa2e597c92bc49e1091989990677d476569",
+    "sources/hermes-os-runtime/integrations/telegram_bridge.py": "97b4cea9e4921cab701097655c05f2e5b416c0606a41309641bb74f3b2402b99",
+    "sources/hermes-os-runtime/skills/hermes-fleet-bridge/SKILL.md": "b2c57b07398225139e2a230acedd90b074ce01c91bcc0b154b70cf812bcee905",
+    "sources/hermes-workspace/memory-graph/dashboard.html": "c113ccb842e18ae76cc0412f148a3bb7ed7f93e2443a81b3ee21af94fe72e102",
+    "sources/hermes-workspace/public/dashboard.html": "c113ccb842e18ae76cc0412f148a3bb7ed7f93e2443a81b3ee21af94fe72e102"
+  },
+  "test_caveat": "Full upstream pytest is not run for this checkpoint; focused syntax/tests/dashboard restore checks are used before push."
 }
