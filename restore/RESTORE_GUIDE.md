@@ -22,6 +22,19 @@ Checkpoint branch:
 hermes-os-checkpoint-20260503-context7-restore
 ```
 
+## Canonical Restore Source
+
+The verified Git checkpoint branch is the source of truth for Hermes OS restore after:
+
+- the branch exists on GitHub,
+- a fresh shallow clone succeeds,
+- `restore/MANIFEST.json` parses,
+- restore-critical files exist,
+- dashboard validation passes,
+- and manifest hashes match.
+
+Local `~/hermes-agent-backups` bundles are temporary fallbacks only while push or clone verification is blocked. After Git verification passes, clean local bundles or keep at most one newest emergency bundle with a written reason.
+
 Clone:
 
 ```bash

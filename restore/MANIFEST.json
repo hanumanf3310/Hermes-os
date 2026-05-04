@@ -1,5 +1,5 @@
 {
-  "generated_at_bangkok": "2026-05-03T21:13:20+07:00",
+  "generated_at_bangkok": "2026-05-04T11:33:15+07:00",
   "repo_url": "https://github.com/hanumanf3310/Hermes-os.git",
   "checkpoint_branch": "hermes-os-checkpoint-20260503-context7-restore",
   "snapshot_kind": "restore-ready Hermes OS checkpoint after Context7 MCP, skill bindings, dashboard refresh, gateway/model/policy hardening",
@@ -49,7 +49,8 @@
       "BOOTSTRAP.md",
       "RESTORE_GUIDE.md",
       "CURRENT_STATE_20260503.md",
-      "MANIFEST.json"
+      "MANIFEST.json",
+      "CLEANUP_20260504.md"
     ]
   },
   "excluded": [
@@ -141,6 +142,10 @@
     {
       "name": "large file scan",
       "result": "0 files over threshold"
+    },
+    {
+      "name": "2026-05-04 cleanup/source-of-truth verification",
+      "result": "remote branch and fresh clone verified; local hermes-agent-backups deleted; claude-code-blueprint archived under ~/references"
     }
   ],
   "secret_scan": {
@@ -197,9 +202,9 @@
     "bin/hermes-workspace": "993a3366d06951b95209d1e7f6c13d30fb548b900dd7fcc584600a3b1565bec6",
     "restore/BOOTSTRAP.md": "1f2ecde2b8c0511f762b58912bb3a737b34181ca2fa246f3acd6b8978f79de96",
     "restore/CURRENT_STATE_20260503.md": "e8dfacbe953eafd77903a712ee37b5ebe8c960c133d548198bfba6fa6014c5db",
-    "restore/RESTORE_GUIDE.md": "305eb3cf607f4efc53bcd1cd23052f84ab30f3a5bf2d52f924a86b3f5d7f81f6",
+    "restore/RESTORE_GUIDE.md": "6aa904756630fd8af78af6f7f793736bfa8546195a0dd2315c5ff520ab925b6a",
     "scripts/validate-dashboard-graph.py": "5fe7433d8ff2e0f7933245b1dc36193b5de5a355bef0491fa362b1df30977e03",
-    "skills/hermes-os/SKILL.md": "9f7b530b94ee68981ebe8715a9760c5dce9386d47eb9cd15237465a4d3a2760a",
+    "skills/hermes-os/SKILL.md": "7dfab5bb25dc3717b90e6d08b6784189b30cda81312ad6225aea78a39bc3e188",
     "skills/hermes-os/auto-memory-audit-cron/SKILL.md": "64819d73e24322d4dd204133617784631759cd2f17cbb40969750c76294fe3dd",
     "skills/hermes-os/bin/hermes-os": "3819c61e811f0c33731aa21e8ad44931fd0599367e5289da19e0ec6d3c9a2e0a",
     "skills/hermes-os/context7-docs-evidence-nerve/SKILL.md": "3c345b9d23e88563714cc786db6cb4e00a1f0f307b6bdb6cc8dd458ece0cfccd",
@@ -261,7 +266,17 @@
     "sources/hermes-os-runtime/integrations/telegram_bridge.py": "97b4cea9e4921cab701097655c05f2e5b416c0606a41309641bb74f3b2402b99",
     "sources/hermes-os-runtime/skills/hermes-fleet-bridge/SKILL.md": "b2c57b07398225139e2a230acedd90b074ce01c91bcc0b154b70cf812bcee905",
     "sources/hermes-workspace/memory-graph/dashboard.html": "c113ccb842e18ae76cc0412f148a3bb7ed7f93e2443a81b3ee21af94fe72e102",
-    "sources/hermes-workspace/public/dashboard.html": "c113ccb842e18ae76cc0412f148a3bb7ed7f93e2443a81b3ee21af94fe72e102"
+    "sources/hermes-workspace/public/dashboard.html": "c113ccb842e18ae76cc0412f148a3bb7ed7f93e2443a81b3ee21af94fe72e102",
+    "restore/CLEANUP_20260504.md": "ac07525c2dbfe83e6bc00a55f156ac02915ac8ad7162c262d79d78eab26c15aa",
+    "skills/software-development/hermes-os-github-backup-snapshot/SKILL.md": "fe40fa41b750a90cd3d80696caac9b55a270d45781e9deefb2c57b0a1af2aa0b"
   },
-  "test_caveat": "Full upstream pytest is not run for this checkpoint; focused syntax/tests/dashboard restore checks are used before push."
+  "test_caveat": "Full upstream pytest is not run for this checkpoint; focused syntax/tests/dashboard restore checks are used before push.",
+  "cleanup_20260504": {
+    "source_of_truth": "verified Git checkpoint branch hermes-os-checkpoint-20260503-context7-restore",
+    "deleted": "/home/hanuman3310/hermes-agent-backups",
+    "freed_approx": "601M",
+    "moved": "/home/hanuman3310/claude-code-blueprint -> /home/hanuman3310/references/claude-code-blueprint",
+    "reference_size": "132K",
+    "rule": "local bundles are temporary only until push/fresh-clone/hash verification passes; keep at most one emergency bundle with written reason"
+  }
 }

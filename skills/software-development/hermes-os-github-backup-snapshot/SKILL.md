@@ -31,6 +31,8 @@ Use this skill when Boss wants a **single-repo** GitHub backup of Hermes-os that
 - Use `Repo.env.example` instead of the real `Repo.env`.
 - Verify the repo after push; do not claim success from the commit alone.
 - When the backup is a **checkpoint before a core update**, the restore target must be runnable like the system at backup time, not merely an archival file dump. Capture restore-critical command/gateway/helper files and verify them from a fresh clone.
+- After push plus fresh-clone verification passes, the verified Git checkpoint branch is the **source of truth** for restore. `~/hermes-agent-backups` is only a temporary local fallback while remote push/verification is blocked.
+- Do not let local bundle storage grow. After the Git checkpoint is verified, delete temporary bundles or keep at most one newest, explicitly justified emergency bundle.
 
 ## Typical source inventory
 
@@ -153,7 +155,7 @@ If a moving backup branch rejects as non-fast-forward during a checkpoint backup
 
 If the remote URL is malformed or credential handling fails, stop and fix the URL/credential flow rather than trying repeated blind pushes.
 
-If commit succeeds but push is blocked by missing GitHub authentication, create a verified local fallback bundle before stopping:
+If commit succeeds but push is blocked by missing GitHub authentication, GitHub size limits, or push protection, create a verified local fallback bundle before stopping or while repairing the push:
 
 ```bash
 mkdir -p ~/hermes-agent-backups
@@ -161,7 +163,15 @@ git bundle create ~/hermes-agent-backups/<branch>-<shortsha>.bundle <branch>
 git bundle verify ~/hermes-agent-backups/<branch>-<shortsha>.bundle
 ```
 
-Report the local commit SHA, bundle path/size, `git bundle verify` output, and the fact that `git ls-remote --heads origin <branch>` is still empty. This preserves a restore point without pretending the remote backup is complete.
+Report the local commit SHA, bundle path/size, `git bundle verify` output, and the fact that `git ls-remote --heads origin <branch>` is still empty if remote push is not verified. This preserves a restore point without pretending the remote backup is complete.
+
+Once remote push succeeds and a fresh clone verifies `restore/MANIFEST.json`, restore-critical files, and hashes, promote the Git checkpoint branch to the canonical restore source. Then clean local fallback bundles instead of keeping `~/hermes-agent-backups` as a parallel truth source. If Boss explicitly wants an offline fallback, keep only the newest verified emergency bundle and record why it remains.
+
+If GitHub rejects the push for a file over 100MB, do not switch to Git LFS by default for checkpoint backups. Exclude generated archives and reports (for example `reports/`, `*.tar.gz`) unless Boss explicitly asks to preserve them, update `restore/MANIFEST.json` with the exclusion, amend the commit, and push again.
+
+If GitHub push protection flags secrets inside a broad copied directory (for example an unrelated skill containing OAuth examples), narrow the backup scope instead of bypassing push protection. Prefer selected restore-critical skills over dumping all of `~/.hermes/skills`, and amend the commit so the flagged content is removed from the pushed history.
+
+When auditing forbidden staged files, distinguish adding/modifying secrets from deleting stale secret-like files. Deleting a tracked `.envrc`/secret file from the backup may be allowed; adding or modifying it must remain blocked.
 
 ### 6) Verify the published repo
 
@@ -206,6 +216,7 @@ If a verified backup snapshot is stale, update `restore/MANIFEST.json` and `rest
 - A temporary authenticated remote is useful for push operations, but the final repo should not expose credentials.
 - `git ls-remote` is a simple, reliable post-push proof that the target branch exists remotely.
 - A restore snapshot can be valid but stale; for core updates, backup freshness must be checked against current protected files before using it as a rollback baseline.
+- Local bundles are a temporary safety net, not the permanent restore source. A verified Git checkpoint replaces them as canonical truth.
 
 ## Pitfalls
 
@@ -233,6 +244,7 @@ A Hermes-os GitHub backup snapshot is complete when:
 - remote verification confirms the branch exists on GitHub
 - for core-update checkpoints, a fresh clone of the canonical restore ref contains the restore-critical files and the relevant smoke/targeted tests pass or a caveat is explicitly reported
 - if a moving branch could not be updated safely, the final report names the immutable checkpoint branch as the restore source of truth
+- temporary `~/hermes-agent-backups` bundles are deleted after verified push/clone, or retention is limited to one newest emergency bundle with a written reason
 
 ## Minimal report format
 

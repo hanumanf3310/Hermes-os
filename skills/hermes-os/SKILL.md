@@ -381,7 +381,8 @@ now = datetime.now(ZoneInfo("Asia/Bangkok"))
 1. **Checkpoint ก่อน reload**
    - สร้าง git checkpoint branch บน dev และ live checkout
    - Commit patch ปัจจุบัน
-   - สร้างและ verify `git bundle` fallback
+   - ใช้ verified Git checkpoint branch เป็น restore source of truth หลัง push + fresh clone + manifest/hash verify ผ่าน
+   - สร้าง `git bundle` fallback เฉพาะเมื่อ remote push/clone verify ยังติดขัด และล้าง `~/hermes-agent-backups` หลัง Git checkpoint verify ผ่าน หรือเก็บได้ไม่เกิน 1 emergency bundle ที่มีเหตุผลชัดเจน
    - ตรวจสอบว่าไม่มี forbidden files (secrets, `.env`) ถูก staged
 
 2. **Pre-reload inspection**
