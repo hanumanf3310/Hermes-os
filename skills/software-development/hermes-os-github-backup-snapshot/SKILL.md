@@ -165,7 +165,7 @@ git bundle verify ~/hermes-agent-backups/<branch>-<shortsha>.bundle
 
 Report the local commit SHA, bundle path/size, `git bundle verify` output, and the fact that `git ls-remote --heads origin <branch>` is still empty if remote push is not verified. This preserves a restore point without pretending the remote backup is complete.
 
-Once remote push succeeds and a fresh clone verifies `restore/MANIFEST.json`, restore-critical files, and hashes, promote the Git checkpoint branch to the canonical restore source. Then clean local fallback bundles instead of keeping `~/hermes-agent-backups` as a parallel truth source. If Boss explicitly wants an offline fallback, keep only the newest verified emergency bundle and record why it remains.
+Once remote push succeeds and a fresh clone verifies `restore/MANIFEST.json`, restore-critical files, and hashes, promote the Git checkpoint branch to the canonical restore source. Then clean local fallback bundles instead of keeping `~/hermes-agent-backups` as a parallel truth source. Use `python3 scripts/prune-hermes-agent-bundles.py --after-verified-git-checkpoint --keep-latest 0` from the Hermes-os checkpoint repo to delete the temporary bundle directory, or `--keep-latest 1` only when Boss explicitly wants one offline emergency bundle and the reason is recorded.
 
 If GitHub rejects the push for a file over 100MB, do not switch to Git LFS by default for checkpoint backups. Exclude generated archives and reports (for example `reports/`, `*.tar.gz`) unless Boss explicitly asks to preserve them, update `restore/MANIFEST.json` with the exclusion, amend the commit, and push again.
 
@@ -245,6 +245,7 @@ A Hermes-os GitHub backup snapshot is complete when:
 - for core-update checkpoints, a fresh clone of the canonical restore ref contains the restore-critical files and the relevant smoke/targeted tests pass or a caveat is explicitly reported
 - if a moving branch could not be updated safely, the final report names the immutable checkpoint branch as the restore source of truth
 - temporary `~/hermes-agent-backups` bundles are deleted after verified push/clone, or retention is limited to one newest emergency bundle with a written reason
+- cleanup evidence from `scripts/prune-hermes-agent-bundles.py` is reported when a local bundle directory existed
 
 ## Minimal report format
 

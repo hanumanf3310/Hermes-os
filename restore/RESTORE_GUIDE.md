@@ -33,7 +33,7 @@ The verified Git checkpoint branch is the source of truth for Hermes OS restore 
 - dashboard validation passes,
 - and manifest hashes match.
 
-Local `~/hermes-agent-backups` bundles are temporary fallbacks only while push or clone verification is blocked. After Git verification passes, clean local bundles or keep at most one newest emergency bundle with a written reason.
+Local `~/hermes-agent-backups` bundles are temporary fallbacks only while push or clone verification is blocked. After Git verification passes, clean local bundles or keep at most one newest emergency bundle with a written reason. Use `python3 scripts/prune-hermes-agent-bundles.py --after-verified-git-checkpoint --keep-latest 0` after successful push plus fresh-clone manifest/hash verification; use `--keep-latest 1` only for a documented offline emergency fallback.
 
 Clone:
 
